@@ -11,12 +11,6 @@ import "swiper/css";
 import "swiper/css/effect-fade";
 
 export default function Home() {
-  const images = [
-    "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?w=1200&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1570725132930-2d09843b20b4?w=1200&auto=format&fit=crop&q=80"
-  ];
 
   const featuredDestinations = [
     {

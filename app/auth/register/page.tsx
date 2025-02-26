@@ -25,7 +25,9 @@ const formSchema = z.object({
   description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres'),
   address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres'),
   phone: z.string().min(8, 'El teléfono debe tener al menos 8 caracteres'),
-  website: z.string().url('URL inválida').optional(),
+  website: z.string().optional(),
+  instagram: z.string().optional(),
+  facebook: z.string().optional(),
   logo: z.any().refine((file) => file?.length > 0, 'Por favor suba un logo'),
 });
 
@@ -43,6 +45,8 @@ export default function RegisterPage() {
       address: '',
       phone: '',
       website: '',
+      instagram: '',
+      facebook: '',
     },
   });
 
@@ -205,6 +209,32 @@ export default function RegisterPage() {
                 </FormItem>
               )}
             />
+              <FormField
+                  control={form.control}
+                  name="instagram"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Cuenta de Instagram (opcional)</FormLabel>
+                          <FormControl>
+                              <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
+              <FormField
+                  control={form.control}
+                  name="facebook"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Cuenta de Facebook (opcional)</FormLabel>
+                          <FormControl>
+                              <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Registrando...' : 'Registrar agencia'}

@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { useState } from 'react';
+import {useEffect, useState} from 'react'
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,11 +21,12 @@ export default function DashboardLayout({
   const session = useSession();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  useEffect(() => {
+    if (!session) {
+      redirect('/auth/login');
+    }
+  }, [session])
 
-
-  if (!session) {
-    redirect('/auth/login');
-  }
 
   if (session.status === 'loading') {
     return <div>Cargando...</div>;
