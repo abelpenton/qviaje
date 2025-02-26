@@ -1,5 +1,4 @@
 //@ts-nocheck
-
 "use client";
 
 import { useState } from 'react';
@@ -20,10 +19,77 @@ import {
     Globe,
     ChevronRight,
 } from 'lucide-react';
+import ItineraryPDF from '@/app/paquetes/[id]/PdfItinerary'
+import { pdf, BlobProvider } from "@react-pdf/renderer";
 
 export default function PackageDetailPage({ packageData }) {
     const [selectedDate, setSelectedDate] = useState(packageData.startDates[0]);
     const [mainImage, setMainImage] = useState(packageData.images[0]);
+
+    const handleDownloadPDF = async () => {
+        const tourPackage = {
+            id: 1,
+            title: "Aventura en Machu Picchu",
+            subtitle: "Descubre la magia de la ciudad perdida de los Incas",
+            location: "Cusco, Perú",
+            images: [
+                "https://images.unsplash.com/photo-1526392060635-9d6019884377?w=800",
+                "https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=800",
+                "https://images.unsplash.com/photo-1569383746724-6f1b882b8f46?w=800",
+            ],
+            price: 1499,
+            rating: 4.96,
+            reviews: 128,
+            dates: "5 días / 4 noches",
+            difficulty: "Moderado",
+            minPeople: 2,
+            maxPeople: 12,
+            startDates: [
+                { date: "2024-05-15", spots: 8, price: 1499 },
+                { date: "2024-06-01", spots: 12, price: 1599 },
+                { date: "2024-06-15", spots: 6, price: 1499 },
+            ],
+            included: [
+                "Alojamiento en hoteles 4 estrellas",
+                "Desayuno diario",
+                "Traslados aeropuerto-hotel-aeropuerto",
+                "Guía turístico profesional",
+                "Entradas a sitios arqueológicos",
+            ],
+            notIncluded: [
+                "Vuelos internacionales",
+                "Propinas",
+                "Gastos personales",
+                "Seguro de viaje",
+            ],
+            itinerary: [
+                {
+                    day: 1,
+                    title: "Llegada a Cusco",
+                    description: "Recepción en el aeropuerto y traslado al hotel. Tarde libre para aclimatación.",
+                    activities: [
+                        { time: "13:00", description: "Recogida en el aeropuerto" },
+                        { time: "15:00", description: "Check-in en el hotel" },
+                        { time: "16:00", description: "Charla de orientación" },
+                    ],
+                    meals: {
+                        breakfast: false,
+                        lunch: false,
+                        dinner: true,
+                    },
+                    accommodation: "Hotel San Agustín Plaza",
+                },
+            ],
+        };
+        const blob = await pdf(<ItineraryPDF tourPackage={tourPackage} />).toBlob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `itinerario-${tourPackage.title.replace(/\s+/g, '-')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -338,8 +404,8 @@ export default function PackageDetailPage({ packageData }) {
                             </div>
 
                             <div className="space-y-4">
-                                <Button className="w-full">Reservar Ahora</Button>
-                                <Button variant="outline" className="w-full">
+                                <Button className="w-full">Consutlar</Button>
+                                <Button variant="outline" className="w-full" onClick={handleDownloadPDF}>
                                     <Download className="h-4 w-4 mr-2" />
                                     Descargar Itinerario
                                 </Button>

@@ -215,11 +215,13 @@ export default function AgenciasPage() {
                                     </div>
                                 </div>
 
-                                {/* Botón Ver Detalles */}
-                                <Button variant="outline" className="self-center">
-                                    Ver Detalles
-                                    <ChevronRight className="h-4 w-4 ml-2" />
-                                </Button>
+                                {/* Botón Ver Paquetes */}
+                                <Link href={`/agencias/${agency.id}/paquetes`}>
+                                    <Button variant="outline" className="self-center">
+                                        Ver Paquetes
+                                        <ChevronRight className="h-4 w-4 ml-2" />
+                                    </Button>
+                                </Link>
                             </div>
 
                             {/* Reseñas Destacadas */}
