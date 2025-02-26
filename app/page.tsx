@@ -1,0 +1,205 @@
+"use client"
+
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Search, MapPin, Calendar, Users, Heart, Star, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, EffectFade } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/effect-fade";
+
+export default function Home() {
+  const images = [
+    "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1570725132930-2d09843b20b4?w=1200&auto=format&fit=crop&q=80"
+  ];
+
+  const featuredDestinations = [
+    {
+      id: 1,
+      title: "Punta del Este",
+      subtitle: "Escapada de lujo con playa privada",
+      location: "Uruguay",
+      image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&auto=format&fit=crop&q=60",
+      price: 1299,
+      rating: 4.97,
+      dates: "5 días / 4 noches",
+      tags: ["Playa", "Lujo"]
+    },
+    {
+      id: 2,
+      title: "Riviera Maya",
+      subtitle: "Todo incluido en el Caribe",
+      location: "México",
+      image: "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&auto=format&fit=crop&q=60",
+      price: 1599,
+      rating: 4.89,
+      dates: "7 días / 6 noches",
+      tags: ["Playa", "Todo Incluido"]
+    },
+    {
+      id: 3,
+      title: "Machu Picchu",
+      subtitle: "Aventura Inca en los Andes",
+      location: "Perú",
+      image: "https://images.unsplash.com/photo-1526392060635-9d6019884377?w=800&auto=format&fit=crop&q=60",
+      price: 1499,
+      rating: 4.96,
+      dates: "5 días / 4 noches",
+      tags: ["Cultural", "Aventura"]
+    },
+  ];
+
+  // @ts-ignore
+  return (
+      <div className="min-h-screen text-center">
+        {/* Hero Section */}
+        <section className="relative h-[600px] flex items-center justify-center text-center">
+          <Image
+              src="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?w=1200&auto=format&fit=crop&q=80"
+              alt="Destino paradisíaco"
+              fill
+              className="object-cover brightness-50"
+          />
+          <div className="container relative z-10 text-center text-white">
+            <h1 className="text-5xl font-bold mb-6">Descubre tu próxima aventura</h1>
+            <p className="text-xl mb-8 max-w-2xl mx-auto">
+              Encuentra los mejores paquetes turísticos de agencias verificadas en Latinoamérica
+            </p>
+            <div className="bg-white/10 backdrop-blur-md rounded-full p-2 max-w-4xl mx-auto">
+              <div className="flex items-center gap-4 justify-center">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white"/>
+                  <input
+                      type="text"
+                      placeholder="¿A dónde quieres ir?"
+                      className="w-full pl-10 pr-4 py-3 rounded-full bg-white/10 text-white placeholder:text-white/70 border-0 focus:ring-2 focus:ring-white/50"
+                  />
+                </div>
+                <Button
+                    variant="outline"
+                    className="rounded-full border-white/30 text-black hover:bg-white hover:text-black transition-colors"
+                >
+                  <Calendar className="h-4 w-4 mr-2"/>
+                  Fechas
+                </Button>
+                <Button
+                    variant="outline"
+                    className="rounded-full border-white/30 text-black hover:bg-white hover:text-black transition-colors"
+                >
+                  <Users className="h-4 w-4 mr-2"/>
+                  Viajeros
+                </Button>
+                <Button className="rounded-full bg-white text-black hover:bg-white/90">
+                  <Search className="h-4 w-4"/>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+          <section className="flex items-center justify-center py-20 bg-gray-50 w-full">
+            <div className="container text-center">
+              <h2 className="text-3xl font-bold mb-12">¿Por qué elegir QViaje?</h2>
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="h-8 w-8 text-primary"/>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Búsqueda Simplificada</h3>
+                  <p className="text-muted-foreground">
+                    Encuentra y compara cientos de paquetes turísticos en un solo lugar
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Star className="h-8 w-8 text-primary"/>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Agencias Verificadas</h3>
+                  <p className="text-muted-foreground">
+                    Todas las agencias son verificadas para garantizar la mejor experiencia
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Heart className="h-8 w-8 text-primary"/>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Mejores Precios</h3>
+                  <p className="text-muted-foreground">
+                    Accede a ofertas exclusivas y los mejores precios del mercado
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+
+        {/* Featured Packages */}
+        <section className="py-20 flex items-center justify-center w-full">
+          <div className="container">
+            <div className="flex items-center justify-between mb-12">
+              <h2 className="text-3xl font-bold">Paquetes Destacados</h2>
+              <Link href="/explorar" className="text-primary hover:underline inline-flex items-center">
+                Ver todos los paquetes
+                <ArrowRight className="ml-2 h-4 w-4"/>
+              </Link>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              {featuredDestinations.map((destination) => (
+                  <Link key={destination.id} href={`/paquetes/${destination.id}`} className="group">
+                    <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-4">
+                      <Image
+                          src={destination.image}
+                          alt={destination.title}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-105"
+                      />
+                      <div className="absolute bottom-3 left-3 flex gap-2">
+                        {destination.tags.map((tag) => (
+                            <span key={tag} className="px-2 py-1 rounded-full text-xs font-medium bg-white/90">
+                        {tag}
+                      </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-xl">{destination.title}</h3>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 fill-current"/>
+                          <span>{destination.rating}</span>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground">{destination.location}</p>
+                      <p className="font-medium">{destination.subtitle}</p>
+                      <p className="text-sm text-muted-foreground">{destination.dates}</p>
+                      <p className="font-semibold text-lg">
+                        USD ${destination.price.toLocaleString()}
+                      </p>
+                    </div>
+                  </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 bg-primary text-primary-foreground flex items-center justify-center w-full">
+          <div className="container flex flex-col items-center justify-center text-center">
+            <h2 className="text-3xl font-bold mb-6">¿Eres una agencia de viajes?</h2>
+            <p className="text-xl mb-8 max-w-2xl mx-auto">
+              Únete a QViaje y llega a miles de viajeros potenciales. Digitaliza tu negocio y aumenta tus ventas.
+            </p>
+            <Link href={`/auth/register`} className="text-primary hover:underline inline-flex items-center">
+              Registra tu agencia
+            </Link>
+          </div>
+        </section>
+      </div>
+  );
+}
