@@ -79,16 +79,12 @@ const PackageSchema = new mongoose.Schema({
   startDates: [{
     date: Date,
     availableSpots: Number,
-    price: Number, // Precio específico para esta fecha (opcional)
+    price: Number,
   }],
   category: [{
     type: String,
     enum: ['Playa', 'Montaña', 'Ciudad', 'Aventura', 'Relax', 'Cultural', 'Familiar', 'Romántico', 'Lujo', 'Económico'],
   }],
-  difficulty: {
-    type: String,
-    enum: ['Fácil', 'Moderado', 'Difícil', 'Extremo'],
-  },
   minPeople: {
     type: Number,
     default: 1,
@@ -99,8 +95,8 @@ const PackageSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'published', 'archived'],
-    default: 'draft',
+    enum: ['Creado', 'Listado', 'Archivado'],
+    default: 'Creado',
   },
   createdAt: {
     type: Date,

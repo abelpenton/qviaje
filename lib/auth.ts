@@ -39,10 +39,11 @@ export const authOptions: NextAuthOptions = {
                     throw new Error('Email o contraseña incorrectos');
                 }
 
+                console.log(agency)
                 return {
                     id: agency._id,
                     email: agency.email,
-                    name: agency.name
+                    name: agency.name,
                 };
             }
         })
@@ -54,8 +55,7 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async session({ session, token }) {
             if (token) {
-                console.log(token)
-                session.user.id = token.id;
+                session.user.id = token.sub;
                 session.user.email = token.email;
             }
             return session;
