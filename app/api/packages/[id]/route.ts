@@ -1,105 +1,194 @@
-//@ts-nocheck
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import dbConnect from '@/lib/db';
 import Package from '@/models/Package';
+import { authOptions } from '@/lib/auth';
+import cloudinary from 'cloudinary';
 
+cloudinary.v2.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// GET - Obtener un paquete específico
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+    request: Request,
+    { params }: { params: { id: string } }
 ) {
   try {
     await dbConnect();
-    // @ts-ignore
-    const packagedb = await Package.findById(params.id);
+    const { id } = params;
 
-    //@ts-ignore
-    if (!packagedb) {
+    const packageData = await Package.findById(id);
+
+    if (!packageData) {
       return NextResponse.json(
-        { error: 'Paquete no encontrado' },
-        { status: 404 }
+          { error: 'Paquete no encontrado' },
+          { status: 404 }
       );
     }
 
-    //@ts-ignore
-    return NextResponse.json(packagedb);
+    return NextResponse.json(packageData);
   } catch (error) {
+    console.error('Error al obtener el paquete:', error);
     return NextResponse.json(
-      { error: 'Error al obtener el paquete' },
-      { status: 500 }
+        { error: 'Error al obtener el paquete' },
+        { status: 500 }
     );
   }
 }
 
+// PUT - Actualizar un paquete
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+    request: Request,
+    { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     await dbConnect();
-    const data = await request.json();
-    
-    const packagedb = await Package.findOneAndUpdate(
-      { _id: params.id, agencyId: session.user.id },
-      data,
-      { new: true, runValidators: true }
-    );
-    
-    if (!packagedb) {
+    const { id } = params;
+
+    // Verificar que el paquete exista y pertenezca a la agencia
+    const packageToUpdate = await Package.findOne({
+      _id: id,
+      agencyId: session.user.id
+    });
+
+    if (!packageToUpdate) {
       return NextResponse.json(
-        { error: 'Paquete no encontrado' },
-        { status: 404 }
+          { error: 'Paquete no encontrado o no autorizado' },
+          { status: 404 }
       );
     }
-    
-    return NextResponse.json(packagedb);
+
+    // Parse FormData
+    const formData = await request.formData();
+
+    // Extraer las imágenes actuales
+    const currentImagesStr = formData.get('currentImages');
+    let currentImages = [];
+    if (currentImagesStr) {
+      try {
+        currentImages = JSON.parse(currentImagesStr);
+      } catch (e) {
+        console.error('Error al parsear las imágenes actuales:', e);
+      }
+    }
+
+    // Extraer los archivos de imágenes nuevas
+    const files = formData.getAll('images');
+    let newImages = [];
+
+    // Subir nuevas imágenes a Cloudinary si existen
+    if (files && files.length > 0 && files[0] instanceof File) {
+      newImages = await Promise.all(
+          files.map(async (file) => {
+            const buffer = await file.arrayBuffer();
+            const base64Image = Buffer.from(buffer).toString('base64');
+            const uploadResponse = await cloudinary.v2.uploader.upload(`data:image/jpeg;base64,${base64Image}`);
+            return {
+              url: uploadResponse.secure_url,
+              alt: formData.get('title') || 'Imagen del paquete'
+            };
+          })
+      );
+    }
+
+    // Combinar imágenes actuales y nuevas
+    const allImages = [...currentImages, ...newImages];
+
+    // Procesar las fechas de salida
+    let startDates = [];
+    const startDatesStr = formData.get('startDates');
+    if (startDatesStr) {
+      try {
+        startDates = JSON.parse(startDatesStr);
+      } catch (e) {
+        console.error('Error al parsear las fechas de salida:', e);
+      }
+    }
+
+    // Preparar los datos para la actualización
+    const updateData = {
+      title: formData.get('title'),
+      description: formData.get('description'),
+      destination: formData.get('destination'),
+      price: parseFloat(formData.get('price')),
+      duration: {
+        days: parseInt(formData.get('duration').split(' ')[0]),
+        nights: parseInt(formData.get('duration').split(' / ')[1])
+      },
+      included: formData.get('included').split('\n').map(item => item.trim()),
+      notIncluded: formData.get('notIncluded').split('\n').map(item => item.trim()),
+      minPeople: parseInt(formData.get('minPeople')),
+      maxPeople: parseInt(formData.get('maxPeople')),
+      startDates: startDates,
+      updatedAt: new Date()
+    };
+
+    // Solo actualizar las imágenes si hay nuevas
+    if (allImages.length > 0) {
+      updateData.images = allImages;
+    }
+
+    // Actualizar el paquete
+    const updatedPackage = await Package.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+    );
+
+    return NextResponse.json(updatedPackage);
   } catch (error) {
+    console.error('Error al actualizar el paquete:', error);
     return NextResponse.json(
-      { error: 'Error al actualizar el paquete' },
-      { status: 500 }
+        { error: 'Error al actualizar el paquete' },
+        { status: 500 }
     );
   }
 }
 
+// DELETE - Eliminar un paquete
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+    request: Request,
+    { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     await dbConnect();
-    const packagedb = await Package.findOneAndDelete({
-      _id: params.id,
-      agencyId: session.user.id,
+    const { id } = params;
+
+    // Verificar que el paquete exista y pertenezca a la agencia
+    const packageToDelete = await Package.findOne({
+      _id: id,
+      agencyId: session.user.id
     });
-    
-    if (!packagedb) {
+
+    if (!packageToDelete) {
       return NextResponse.json(
-        { error: 'Paquete no encontrado' },
-        { status: 404 }
+          { error: 'Paquete no encontrado o no autorizado' },
+          { status: 404 }
       );
     }
-    
-    return NextResponse.json({ message: 'Paquete eliminado exitosamente' });
+
+    // Eliminar el paquete
+    await Package.findByIdAndDelete(id);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error al eliminar el paquete:', error);
     return NextResponse.json(
-      { error: 'Error al eliminar el paquete' },
-      { status: 500 }
+        { error: 'Error al eliminar el paquete' },
+        { status: 500 }
     );
   }
 }

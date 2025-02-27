@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,13 +18,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import {Trash, Trash2} from 'lucide-react'
 
+// Modificamos el esquema para hacer las imágenes opcionales en la edición
 const formSchema = z.object({
     title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
     description: z.string().min(20, 'La descripción debe tener al menos 20 caracteres'),
@@ -37,18 +38,25 @@ const formSchema = z.object({
     notIncluded: z.string().min(10, 'Por favor detalle qué no incluye el paquete'),
     maxPeople: z.string(),
     minPeople: z.string(),
-    images: z.any().refine((files) => files?.length > 0, 'Por favor suba al menos una imagen')
-        .refine((files) => Array.from(files).every(file => file.type.startsWith('image/')), 'Solo se permiten imágenes'),
+    images: z.any()
+        .optional()
+        .refine(
+            (files) => !files || files.length === 0 || Array.from(files).every(file => file.type.startsWith('image/')),
+            'Solo se permiten imágenes'
+        ),
 });
 
-export default function NewPackagePage() {
+export default function EditPackagePage({ params }: { params: { id: string } }) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingPackage, setIsLoadingPackage] = useState(true);
+    const [currentImages, setCurrentImages] = useState([]);
     const [startDates, setStartDates] = useState([]);
     const [newDate, setNewDate] = useState(null);
     const [newSpots, setNewSpots] = useState('');
     const [newPrice, setNewPrice] = useState('');
     const [dateOpen, setDateOpen] = useState(false);
+    const { id } = params;
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -60,10 +68,59 @@ export default function NewPackagePage() {
             duration: '',
             included: '',
             notIncluded: '',
-            minPeople: '1',
-            maxPeople: '10'
+            minPeople: '',
+            maxPeople: ''
         },
     });
+
+    // Cargar los datos del paquete
+    useEffect(() => {
+        const fetchPackage = async () => {
+            try {
+                setIsLoadingPackage(true);
+                const response = await fetch(`/api/packages/${id}`);
+
+                if (!response.ok) {
+                    throw new Error('No se pudo cargar el paquete');
+                }
+
+                const packageData = await response.json();
+
+                // Formatear los datos para el formulario
+                form.reset({
+                    title: packageData.title,
+                    description: packageData.description,
+                    destination: packageData.destination,
+                    price: packageData.price.toString(),
+                    duration: `${packageData.duration.days} días / ${packageData.duration.nights} noches`,
+                    included: packageData.included.join('\n'),
+                    notIncluded: packageData.notIncluded.join('\n'),
+                    minPeople: packageData.minPeople?.toString() || '1',
+                    maxPeople: packageData.maxPeople.toString()
+                });
+
+                // Guardar las imágenes actuales
+                setCurrentImages(packageData.images || []);
+
+                // Guardar las fechas de salida
+                if (packageData.startDates && packageData.startDates.length > 0) {
+                    setStartDates(packageData.startDates.map(date => ({
+                        date: new Date(date.date),
+                        availableSpots: date.availableSpots,
+                        price: date.price
+                    })));
+                }
+            } catch (error) {
+                console.error('Error al cargar el paquete:', error);
+                toast.error('Error al cargar el paquete');
+                router.push('/dashboard/paquetes');
+            } finally {
+                setIsLoadingPackage(false);
+            }
+        };
+
+        fetchPackage();
+    }, [id, form, router]);
 
     const addStartDate = () => {
         if (!newDate) {
@@ -118,47 +175,76 @@ export default function NewPackagePage() {
             const formData = new FormData();
             Object.entries(values).forEach(([key, value]) => {
                 if (key === 'images') {
-                    Array.from(value).forEach((file) => formData.append('images', file));
+                    if (value && value.length > 0) {
+                        Array.from(value).forEach((file) => formData.append('images', file));
+                    }
                 } else {
                     formData.append(key, value);
                 }
             });
 
-            // Añadir las fechas de inicio
+            // Añadir el ID del paquete
+            formData.append('id', id);
+
+            // Añadir las imágenes actuales (para mantenerlas si no se suben nuevas)
+            formData.append('currentImages', JSON.stringify(currentImages));
+
+            // Añadir las fechas de salida
             formData.append('startDates', JSON.stringify(startDates.map(date => ({
                 date: date.date,
                 availableSpots: date.availableSpots,
                 price: date.price
             }))));
 
-            const response = await fetch('/api/packages', {
-                method: 'POST',
+            const response = await fetch(`/api/packages/${id}`, {
+                method: 'PUT',
                 body: formData,
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al crear el paquete');
+                throw new Error(errorData.error || 'Error al actualizar el paquete');
             }
 
-            toast.success('Paquete creado exitosamente');
+            toast.success('Paquete actualizado exitosamente');
             router.push('/dashboard/paquetes');
         } catch (error) {
-            console.error('Error al crear:', error);
-            toast.error(error.message || 'Error al crear el paquete');
+            console.error('Error al actualizar:', error);
+            toast.error(error.message || 'Error al actualizar el paquete');
         } finally {
             setIsLoading(false);
         }
     }
 
+    if (isLoadingPackage) {
+        return <div className="flex justify-center items-center h-64">Cargando paquete...</div>;
+    }
+
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             <div>
-                <h1 className="text-2xl font-bold tracking-tight">Nuevo Paquete Turístico</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Editar Paquete Turístico</h1>
                 <p className="text-muted-foreground">
-                    Completa la información de tu nuevo paquete turístico
+                    Actualiza la información de tu paquete turístico
                 </p>
             </div>
+
+            {currentImages.length > 0 && (
+                <div>
+                    <h3 className="text-lg font-medium mb-2">Imágenes actuales</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                        {currentImages.map((image, index) => (
+                            <div key={index} className="relative">
+                                <img
+                                    src={image.url}
+                                    alt={image.alt || 'Imagen del paquete'}
+                                    className="w-full h-32 object-cover rounded-md"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -271,7 +357,7 @@ export default function NewPackagePage() {
                             <FormItem>
                                 <FormLabel>¿Qué incluye?</FormLabel>
                                 <FormControl>
-                                    <Textarea {...field} placeholder="Ingrese cada ítem en una línea separada" />
+                                    <Textarea {...field} />
                                 </FormControl>
                                 <FormMessage/>
                             </FormItem>
@@ -285,7 +371,7 @@ export default function NewPackagePage() {
                             <FormItem>
                                 <FormLabel>¿Qué no incluye?</FormLabel>
                                 <FormControl>
-                                    <Textarea {...field} placeholder="Ingrese cada ítem en una línea separada" />
+                                    <Textarea {...field} />
                                 </FormControl>
                                 <FormMessage/>
                             </FormItem>
@@ -297,7 +383,7 @@ export default function NewPackagePage() {
                         name="images"
                         render={({field: {onChange, value, ...field}}) => (
                             <FormItem>
-                                <FormLabel>Imágenes</FormLabel>
+                                <FormLabel>Nuevas imágenes (opcional)</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="file"
@@ -317,7 +403,7 @@ export default function NewPackagePage() {
                         <div>
                             <h3 className="text-lg font-medium">Fechas de salida</h3>
                             <p className="text-sm text-muted-foreground">
-                                Agregue las fechas disponibles para este paquete
+                                Gestione las fechas disponibles para este paquete
                             </p>
                         </div>
 
@@ -344,7 +430,7 @@ export default function NewPackagePage() {
                                                     size="icon"
                                                     onClick={() => removeStartDate(index)}
                                                 >
-                                                    <Trash className="h-4 w-4 text-red-500" />
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
                                                 </Button>
                                             </div>
                                         ))}
@@ -424,7 +510,7 @@ export default function NewPackagePage() {
                             Cancelar
                         </Button>
                         <Button type="submit" disabled={isLoading}>
-                            {isLoading ? 'Creando...' : 'Crear Paquete'}
+                            {isLoading ? 'Actualizando...' : 'Actualizar Paquete'}
                         </Button>
                     </div>
                 </form>

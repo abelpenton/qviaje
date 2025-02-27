@@ -1,108 +1,86 @@
-//@ts-nocheck
 // /paquetes/[id]/page.tsx
+import { notFound } from 'next/navigation';
 import PackageDetail from './PackageDetail';
+import dbConnect from '@/lib/db';
+import Package from '@/models/Package';
 
-// Generate static paths
-export function generateStaticParams() {
-  // In a real case, this would come from the database
-  const packageIds = [1, 2, 3, 4, 5, 6];
-  return packageIds.map((id) => ({
-    id: id.toString(),
-  }));
+// This function is called at request time
+export async function generateMetadata({ params }) {
+  const { id } = params;
+
+  try {
+    await dbConnect();
+    const packageData = await Package.findById(id);
+
+    if (!packageData) {
+      return {
+        title: 'Paquete no encontrado',
+      };
+    }
+
+    return {
+      title: packageData.title,
+      description: packageData.description,
+    };
+  } catch (error) {
+    console.error('Error al obtener metadatos del paquete:', error);
+    return {
+      title: 'Detalles del paquete',
+    };
+  }
 }
 
-const getPackageData = () => {
-  // @ts-ignore
-  return {
-    id: 1,
-    title: "Aventura en Machu Picchu",
-    subtitle: "Descubre la magia de la ciudad perdida de los Incas",
-    location: "Cusco, Perú",
-    images: [
-      "https://images.unsplash.com/photo-1526392060635-9d6019884377?w=800",
-      "https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=800",
-      "https://images.unsplash.com/photo-1569383746724-6f1b882b8f46?w=800",
-    ],
-    price: 1499,
-    rating: 4.96,
-    reviews: 128,
-    dates: "5 días / 4 noches",
-    difficulty: "Moderado",
-    minPeople: 2,
-    maxPeople: 12,
-    startDates: [
-      { date: "2024-05-15", spots: 8, price: 1499 },
-      { date: "2024-06-01", spots: 12, price: 1599 },
-      { date: "2024-06-15", spots: 6, price: 1499 },
-    ],
-    included: [
-      "Alojamiento en hoteles 4 estrellas",
-      "Desayuno diario",
-      "Traslados aeropuerto-hotel-aeropuerto",
-      "Guía turístico profesional",
-      "Entradas a sitios arqueológicos",
-    ],
-    notIncluded: [
-      "Vuelos internacionales",
-      "Propinas",
-      "Gastos personales",
-      "Seguro de viaje",
-    ],
-    itinerary: [
-      {
-        day: 1,
-        title: "Llegada a Cusco",
-        description: "Recepción en el aeropuerto y traslado al hotel. Tarde libre para aclimatación.",
-        activities: [
-          { time: "13:00", description: "Recogida en el aeropuerto" },
-          { time: "15:00", description: "Check-in en el hotel" },
-          { time: "16:00", description: "Charla de orientación" },
-        ],
-        meals: {
-          breakfast: false,
-          lunch: false,
-          dinner: true,
-        },
-        accommodation: "Hotel San Agustín Plaza",
-      },
-    ],
-    agency: {
-      id: 1,
-      name: "Perú Adventures",
-      logo: "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=200",
-      description: "Especialistas en turismo de aventura en Perú con más de 15 años de experiencia.",
-      rating: 4.9,
-      reviews: 450,
-      verified: true,
-      location: "Cusco, Perú",
-      phone: "+51 984 123 456",
-      email: "info@peruadventures.com",
-      website: "www.peruadventures.com",
-    },
-    reviews: [
-      {
-        id: 1,
-        user: "María González",
-        rating: 5,
-        date: "2024-03-15",
-        comment: "¡Experiencia increíble! El guía fue muy profesional y el servicio excelente.",
-        images: ["https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=200"],
-      },
-      {
-        id: 2,
-        user: "John Smith",
-        rating: 4.8,
-        date: "2024-03-10",
-        comment: "Todo muy bien organizado. Las vistas son espectaculares.",
-        images: ["https://images.unsplash.com/photo-1587595431973-160d0d94add1?w=200"],
-      },
-    ],
-  };
+async function getPackageData(id) {
+  try {
+    await dbConnect();
+    const packageData = await Package.findById(id)
+        .populate('agencyId', 'name logo description rating reviews location phone email website')
+        .lean();
+
+    if (!packageData) {
+      return null;
+    }
+
+    // Transformar el objeto para que coincida con la estructura esperada por el componente
+    return {
+      id: packageData._id.toString(),
+      title: packageData.title,
+      subtitle: packageData.description.substring(0, 100) + '...',
+      location: packageData.destination,
+      images: packageData.images.map(img => img.url),
+      price: packageData.price,
+      rating: packageData.agencyId?.rating || 4.5,
+      reviews: packageData.agencyId?.reviews || 0,
+      dates: `${packageData.duration.days} días / ${packageData.duration.nights} noches`,
+      minPeople: packageData.minPeople,
+      maxPeople: packageData.maxPeople,
+      startDates: packageData.startDates || [],
+      included: packageData.included,
+      notIncluded: packageData.notIncluded,
+      itinerary: packageData.itinerary || [],
+      agency: packageData.agencyId ? {
+        id: packageData.agencyId._id.toString(),
+        name: packageData.agencyId.name,
+        logo: packageData.agencyId.logo,
+        description: packageData.agencyId.description,
+        rating: packageData.agencyId.rating,
+        reviews: packageData.agencyId.reviews,
+        verified: true,
+        location: packageData.agencyId.location,
+        phone: packageData.agencyId.phone,
+        email: packageData.agencyId.email,
+        website: packageData.agencyId.website,
+      } : null,
+      reviews: [], // Podríamos agregar reseñas en el futuro
+    };
+  } catch (error) {
+    console.error('Error al obtener el paquete:', error);
+    return null;
+  }
 }
 
-export default function PackageDetailPage({ params }: { params: { id: string } }) {
-  // In a real app, you would fetch this data from an API or database
-  const packageData = getPackageData();
+export default async function PackageDetailPage({ params }: { params: { id: string } }) {
+  const packageData = await getPackageData(params.id);
 
   return <PackageDetail packageData={packageData} />;
 }

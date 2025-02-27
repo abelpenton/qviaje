@@ -59,7 +59,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    console.log(session)
     if (!session) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
@@ -76,9 +75,23 @@ export async function POST(request: Request) {
           const buffer = await file.arrayBuffer();
           const base64Image = Buffer.from(buffer).toString('base64');
           const uploadResponse = await cloudinary.v2.uploader.upload(`data:image/jpeg;base64,${base64Image}`);
-          return uploadResponse.secure_url; // Return the uploaded image URL
+          return {
+            url: uploadResponse.secure_url,
+            alt: formData.get('title') || 'Imagen del paquete'
+          };
         })
     );
+
+    // Procesar las fechas de salida
+    let startDates = [];
+    const startDatesStr = formData.get('startDates');
+    if (startDatesStr) {
+      try {
+        startDates = JSON.parse(startDatesStr);
+      } catch (e) {
+        console.error('Error al parsear las fechas de salida:', e);
+      }
+    }
 
     // Store the package in MongoDB with Cloudinary URLs
     const packageData = {
@@ -87,25 +100,23 @@ export async function POST(request: Request) {
       destination: formData.get('destination'),
       price: parseFloat(formData.get('price')),
       agencyId: session.user.id,
-      maxPeople: formData.get("maxPeople"),
+      minPeople: parseInt(formData.get('minPeople') || '1'),
+      maxPeople: parseInt(formData.get('maxPeople')),
       duration: {
         days: parseInt(formData.get('duration').split(' ')[0]),
-        nights: parseInt(formData.get('duration').split(' ')[0]) - 1,
+        nights: parseInt(formData.get('duration').split(' / ')[1].split(' ')[0]),
       },
-      included: formData.get('included').split('\n').map((item) => item.trim()),
-      notIncluded: formData.get('notIncluded').split('\n').map((item) => item.trim()),
-      images: uploadedImages.map(url => ({
-        url,
-        alt: formData.get('title')
-      })), // Store Cloudinary URLs
+      included: formData.get('included').split('\n').map((item) => item.trim()).filter(item => item),
+      notIncluded: formData.get('notIncluded').split('\n').map((item) => item.trim()).filter(item => item),
+      images: uploadedImages,
+      startDates: startDates,
     };
 
     const newPackage = await Package.create(packageData);
 
     return NextResponse.json(newPackage);
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return NextResponse.json({ error: 'Error al crear el paquete' }, { status: 500 });
   }
 }
-

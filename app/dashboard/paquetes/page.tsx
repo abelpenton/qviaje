@@ -11,12 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Pencil, Trash } from 'lucide-react';
+import {Plus, Pencil, Trash, Archive, Upload, Eye} from 'lucide-react'
 import Link from 'next/link';
+import {useRouter} from 'next/navigation'
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter()
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -43,6 +45,53 @@ export default function PackagesPage() {
   if (loading) {
     return <p>Cargando...</p>; // Puedes agregar un spinner o algo similar
   }
+
+  const handleStatusChange = async (packageId, newStatus) => {
+    try {
+      const response = await fetch(`/api/packages/${packageId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        // Actualizar el estado local para reflejar el cambio
+        // @ts-ignore
+        setPackages(packages.map(pkg =>
+            pkg._id === packageId ? { ...pkg, status: newStatus } : pkg
+        ));
+      } else {
+        const error = await response.json();
+        console.error('Error al actualizar el estado:', error);
+      }
+    } catch (error) {
+      console.error('Error de red:', error);
+    }
+  };
+
+  const handleDelete = async (packageId) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este paquete? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/packages/${packageId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Eliminar el paquete de la lista local
+        setPackages(packages.filter(pkg => pkg._id !== packageId));
+      } else {
+        const error = await response.json();
+        console.error('Error al eliminar el paquete:', error);
+      }
+    } catch (error) {
+      console.error('Error de red:', error);
+    }
+  };
 
   return (
       <div className="space-y-6">
@@ -84,11 +133,49 @@ export default function PackagesPage() {
                   </span>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button variant="ghost" size="icon">
+                      <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => router.push(`/paquetes/${pkg._id}`)}
+                          title="Ver paquete"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => router.push(`/dashboard/paquetes/editar/${pkg._id}`)}
+                          title="Editar"
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
-                        <Trash className="h-4 w-4" />
+                      {(pkg.status === 'Creado' || pkg.status === 'Archivado') && (
+                          <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleStatusChange(pkg._id, 'Listado')}
+                              title="Publicar"
+                          >
+                            <Upload className="h-4 w-4 text-green-600" />
+                          </Button>
+                      )}
+                      {pkg.status === 'Listado' && (
+                          <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleStatusChange(pkg._id, 'Archivado')}
+                              title="Archivar"
+                          >
+                            <Archive className="h-4 w-4 text-amber-600" />
+                          </Button>
+                      )}
+                      <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(pkg._id)}
+                          title="Eliminar"
+                      >
+                        <Trash className="h-4 w-4 text-red-600" />
                       </Button>
                     </TableCell>
                   </TableRow>
