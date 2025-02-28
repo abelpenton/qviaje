@@ -6,10 +6,12 @@ import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Menu, X, Plane } from "lucide-react";
+import {redirect, useRouter} from 'next/navigation'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session } = useSession(); // Get session
+  const router = useRouter()
 
   return (
       <header className="border-b">
@@ -41,6 +43,9 @@ export default function Header() {
                   // If logged in, show name & logout
                   <div className="flex items-center space-x-4">
                     <span className="text-foreground">{session.user?.name}</span>
+                    <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard")}>
+                      Mi Perfil
+                    </Button>
                     <Button variant="outline" onClick={() => signOut()}>
                       Cerrar Sesión
                     </Button>
@@ -86,6 +91,9 @@ export default function Header() {
                     // If logged in, show name & logout
                     <div className="space-y-2 text-center">
                       <p className="text-foreground">{session.user?.name}</p>
+                      <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard")}>
+                        Mi Perfil
+                      </Button>
                       <Button variant="outline" className="w-full" onClick={() => signOut()}>
                         Cerrar Sesión
                       </Button>

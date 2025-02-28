@@ -23,7 +23,7 @@ const formSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres'),
-  address: z.string().min(5, 'La dirección debe tener al menos 5 caracteres'),
+  location: z.string().min(5, 'La localización debe tener al menos 5 caracteres'),
   phone: z.string().min(8, 'El teléfono debe tener al menos 8 caracteres'),
   website: z.string().optional(),
   instagram: z.string().optional(),
@@ -42,7 +42,7 @@ export default function RegisterPage() {
       email: '',
       password: '',
       description: '',
-      address: '',
+      location: '',
       phone: '',
       website: '',
       instagram: '',
@@ -170,10 +170,10 @@ export default function RegisterPage() {
 
             <FormField
               control={form.control}
-              name="address"
+              name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Dirección</FormLabel>
+                  <FormLabel>Localización</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>

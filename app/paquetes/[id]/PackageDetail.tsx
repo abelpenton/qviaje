@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { useState } from 'react';
@@ -5,12 +6,12 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {   Calendar,   Users,   MapPin,  Star,  Clock,   Download,   Building2, Phone,   Mail,   Globe,  ChevronRight } from 'lucide-react';
+import {   Calendar,   Users,   MapPin,   Star,   Clock,  Download,   Building2,   Phone,   Mail,   Globe,   ChevronRight } from 'lucide-react';
 import ItineraryPDF from '@/app/paquetes/[id]/PdfItinerary'
-import { pdf, BlobProvider } from "@react-pdf/renderer";
+import { pdf } from "@react-pdf/renderer";
 import Link from 'next/link'
 
-export default function PackageDetail({ packageData }) {
+export default function PackageDetail({ packageData, similarPackages = [] }) {
     const [selectedDate, setSelectedDate] = useState(
         packageData.startDates && packageData.startDates.length > 0
             ? packageData.startDates[0]
@@ -21,49 +22,7 @@ export default function PackageDetail({ packageData }) {
             ? packageData.images[0]
             : ""
     );
-
-    // Fallback data for similar packages (this would ideally come from an API)
-    const similarPackages = [
-        {
-            id: 2,
-            title: "Valle Sagrado Completo",
-            subtitle: "Explora los tesoros Incas",
-            location: "Cusco, Perú",
-            image: "https://images.unsplash.com/photo-1580889272861-dc2dbea5f94d?w=800",
-            price: 899,
-            rating: 4.88,
-            reviews: 156,
-            dates: "3 días / 2 noches",
-            tags: ["Cultural", "Historia"],
-            difficulty: "Fácil"
-        },
-        {
-            id: 3,
-            title: "Trekking Salkantay",
-            subtitle: "Ruta alternativa a Machu Picchu",
-            location: "Cusco, Perú",
-            image: "https://images.unsplash.com/photo-1569321633336-ee5147a2f22d?w=800",
-            price: 699,
-            rating: 4.92,
-            reviews: 178,
-            dates: "4 días / 3 noches",
-            tags: ["Aventura", "Trekking"],
-            difficulty: "Difícil"
-        },
-        {
-            id: 4,
-            title: "Camino Inca Clásico",
-            subtitle: "La ruta original a Machu Picchu",
-            location: "Cusco, Perú",
-            image: "https://images.unsplash.com/photo-1526392060635-9d6019884377?w=800",
-            price: 1299,
-            rating: 4.95,
-            reviews: 210,
-            dates: "4 días / 3 noches",
-            tags: ["Aventura", "Cultural", "Trekking"],
-            difficulty: "Moderado"
-        }
-    ];
+    const [travelers, setTravelers] = useState(packageData.minPeople || 1);
 
     const handleDownloadPDF = async () => {
         // Use actual package data for the PDF
@@ -76,7 +35,6 @@ export default function PackageDetail({ packageData }) {
             rating: packageData.rating || (packageData.agency?.rating || 4.5),
             reviews: packageData.reviews?.length || (packageData.agency?.reviews || 0),
             dates: packageData.dates || `${packageData.duration.days} días / ${packageData.duration.nights} noches`,
-            difficulty: packageData.difficulty || "Moderado",
             minPeople: packageData.minPeople,
             maxPeople: packageData.maxPeople,
             startDates: packageData.startDates || [],
@@ -107,6 +65,43 @@ export default function PackageDetail({ packageData }) {
         } catch (error) {
             return "Fecha no disponible";
         }
+    };
+
+    // Generate WhatsApp link with package details
+    const generateWhatsAppLink = () => {
+        if (!packageData.agency?.phone) return '#';
+
+        // Clean phone number (remove spaces, dashes, etc.)
+        const cleanPhone = packageData.agency.phone.replace(/\D/g, '');
+
+        // Create message with package details
+        let message = `Hola, estoy interesado en el paquete turístico "${packageData.title}" para ${travelers} ${travelers === 1 ? 'persona' : 'personas'}`;
+
+        // Add selected date if available
+        if (selectedDate && selectedDate.date) {
+            message += ` con salida el ${formatDate(selectedDate.date)}`;
+        }
+
+        // Add price information
+        const pricePerPerson = selectedDate.price || packageData.price;
+        const totalPrice = pricePerPerson * travelers;
+        message += `.\n\nPrecio por persona: $${pricePerPerson} USD`;
+        message += `\nPrecio total: $${totalPrice} USD`;
+
+        // Add more package details
+        message += `\n\nDestino: ${packageData.location || packageData.destination}`;
+        message += `\nDuración: ${packageData.dates || `${packageData.duration.days} días / ${packageData.duration.nights} noches`}`;
+
+        // Request more information
+        message += `\n\n¿Podrían proporcionarme más información sobre este paquete? Gracias.`;
+
+        return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    };
+
+    // Calculate total price
+    const calculateTotalPrice = () => {
+        const pricePerPerson = selectedDate.price || packageData.price;
+        return pricePerPerson * travelers;
     };
 
     return (
@@ -449,21 +444,52 @@ export default function PackageDetail({ packageData }) {
                                     <label className="block text-sm font-medium mb-2">
                                         Número de Viajeros
                                     </label>
-                                    <select className="w-full border rounded-md p-2">
-                                        {Array.from(
-                                            {length: packageData.maxPeople - packageData.minPeople + 1},
-                                            (_, i) => i + packageData.minPeople
-                                        ).map((num) => (
-                                            <option key={num} value={num}>
-                                                {num} {num === 1 ? "persona" : "personas"}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="flex items-center">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => setTravelers(Math.max(packageData.minPeople || 1, travelers - 1))}
+                                            disabled={travelers <= (packageData.minPeople || 1)}
+                                        >
+                                            -
+                                        </Button>
+                                        <span className="mx-4 font-medium">{travelers}</span>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => setTravelers(Math.min(packageData.maxPeople || 10, travelers + 1))}
+                                            disabled={travelers >= (packageData.maxPeople || 10)}
+                                        >
+                                            +
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 mb-6 border-t border-b py-4">
+                                <div className="flex justify-between">
+                                    <span>Precio base</span>
+                                    <span>${selectedDate.price || packageData.price} USD</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Personas</span>
+                                    <span>x {travelers}</span>
+                                </div>
+                                <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
+                                    <span>Total</span>
+                                    <span>${calculateTotalPrice()} USD</span>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <Button className="w-full">Consultar</Button>
+                                <a href={generateWhatsAppLink()} target="_blank" rel="noopener noreferrer" className="block w-full">
+                                    <Button className="w-full">
+                                        <Phone className="h-4 w-4 mr-2"/>
+                                        Consultar por WhatsApp
+                                    </Button>
+                                </a>
                                 <Button variant="outline" className="w-full" onClick={handleDownloadPDF}>
                                     <Download className="h-4 w-4 mr-2"/>
                                     Descargar Itinerario
@@ -484,68 +510,72 @@ export default function PackageDetail({ packageData }) {
                     </div>
                 </div>
             </div>
-            <section className="bg-gray-50 py-12 mt-8">
-                <div className="container mx-auto px-4">
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-2xl font-bold">Paquetes Similares</h2>
-                        <Link href="/explorar" className="text-primary hover:underline inline-flex items-center">
-                            Ver más paquetes
-                            <ChevronRight className="ml-1 h-4 w-4"/>
-                        </Link>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {similarPackages.map((pkg) => (
-                            <Link key={pkg.id} href={`/paquetes/${pkg.id}`} className="group">
-                                <Card className="overflow-hidden h-full">
-                                    <div className="relative aspect-[4/3]">
-                                        <Image
-                                            src={pkg.image}
-                                            alt={pkg.title}
-                                            fill
-                                            className="object-cover transition-transform group-hover:scale-105"
-                                        />
-                                        <div className="absolute bottom-3 left-3 flex gap-2">
-                                            {pkg.tags.map((tag) => (
-                                                <span key={tag}
-                                                      className="px-2 py-1 rounded-full text-xs font-medium bg-white/90">
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h3 className="font-semibold text-lg">{pkg.title}</h3>
-                                            <div className="flex items-center gap-1">
-                                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>
-                                                <span>{pkg.rating}</span>
+            {/* Similar Packages Section */}
+            {similarPackages && similarPackages.length > 0 && (
+                <section className="bg-gray-50 py-12 mt-8">
+                    <div className="container mx-auto px-4">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-2xl font-bold">Paquetes Similares</h2>
+                            <Link href="/paquetes" className="text-primary hover:underline inline-flex items-center">
+                                Ver más paquetes
+                                <ChevronRight className="ml-1 h-4 w-4"/>
+                            </Link>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {similarPackages.map((pkg) => (
+                                <Link key={pkg.id} href={`/paquetes/${pkg.id}`} className="group">
+                                    <Card className="overflow-hidden h-full">
+                                        <div className="relative aspect-[4/3]">
+                                            <Image
+                                                src={pkg.image || "https://via.placeholder.com/800x600?text=No+Image"}
+                                                alt={pkg.title}
+                                                fill
+                                                className="object-cover transition-transform group-hover:scale-105"
+                                            />
+                                            <div className="absolute bottom-3 left-3 flex gap-2">
+                                                {pkg.tags && pkg.tags.slice(0, 2).map((tag) => (
+                                                    <span key={tag}
+                                                          className="px-2 py-1 rounded-full text-xs font-medium bg-white/90">
+                                                        {tag}
+                                                    </span>
+                                                ))}
                                             </div>
                                         </div>
-                                        <p className="text-sm text-muted-foreground mb-2">{pkg.subtitle}</p>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                            <MapPin className="h-4 w-4"/>
-                                            <span>{pkg.location}</span>
+                                        <div className="p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h3 className="font-semibold text-lg">{pkg.title}</h3>
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>
+                                                    <span>{pkg.rating}</span>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground mb-2">{pkg.subtitle}</p>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                                                <MapPin className="h-4 w-4"/>
+                                                <span>{pkg.location}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                                                <Calendar className="h-4 w-4"/>
+                                                <span>{pkg.dates}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <p className="font-semibold text-lg">
+                                                    USD ${pkg.price.toLocaleString()}
+                                                </p>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {pkg.difficulty}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                            <Calendar className="h-4 w-4"/>
-                                            <span>{pkg.dates}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <p className="font-semibold text-lg">
-                                                USD ${pkg.price.toLocaleString()}
-                                            </p>
-                                            <span className="text-sm text-muted-foreground">
-                                                {pkg.difficulty}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </Link>
-                        ))}
+                                    </Card>
+                                </Link>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            )}
         </div>
     );
 }

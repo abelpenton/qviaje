@@ -26,9 +26,9 @@ const AgencySchema = new mongoose.Schema({
     required: [true, 'Por favor ingrese una descripción'],
     maxlength: [500, 'La descripción no puede tener más de 500 caracteres'],
   },
-  address: {
+  location: {
     type: String,
-    required: [true, 'Por favor ingrese una dirección'],
+    required: [true, 'Por favor ingrese una localización'],
   },
   phone: {
     type: String,

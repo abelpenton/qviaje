@@ -15,14 +15,14 @@ export async function POST(request: Request) {
         const email = formData.get('email') as string;
         const password = formData.get('password') as string;
         const description = formData.get('description') as string;
-        const address = formData.get('address') as string;
+        const location = formData.get('location') as string;
         const phone = formData.get('phone') as string;
         const website = formData.get('website') as string || '';
         const instagram = formData.get('instagram') as string || '';
         const facebook = formData.get('facebook') as string || '';
 
         // Validate required fields
-        if (!name || !email || !password || !description || !address || !phone) {
+        if (!name || !email || !password || !description || !location || !phone) {
             return NextResponse.json(
                 { error: 'Todos los campos obligatorios deben ser completados' },
                 { status: 400 }
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
             password: hashedPassword,
             logo: logoUrl,
             description,
-            address,
+            location,
             phone,
             socialMedia: {
                 website,
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
             email: agency.email,
             logo: agency.logo,
             description: agency.description,
-            address: agency.address,
+            location: agency.location,
             phone: agency.phone,
             website: agency.website,
             verified: agency.verified,

@@ -93,6 +93,28 @@ export async function POST(request: Request) {
       }
     }
 
+    // Procesar el itinerario
+    let itinerary = [];
+    const itineraryStr = formData.get('itinerary');
+    if (itineraryStr) {
+      try {
+        itinerary = JSON.parse(itineraryStr);
+      } catch (e) {
+        console.error('Error al parsear el itinerario:', e);
+      }
+    }
+
+    // Procesar las categorías
+    let category = [];
+    const categoryStr = formData.get('category');
+    if (categoryStr) {
+      try {
+        category = JSON.parse(categoryStr);
+      } catch (e) {
+        console.error('Error al parsear las categorías:', e);
+      }
+    }
+
     // Store the package in MongoDB with Cloudinary URLs
     const packageData = {
       title: formData.get('title'),
@@ -110,6 +132,8 @@ export async function POST(request: Request) {
       notIncluded: formData.get('notIncluded').split('\n').map((item) => item.trim()).filter(item => item),
       images: uploadedImages,
       startDates: startDates,
+      itinerary: itinerary,
+      category: category,
     };
 
     const newPackage = await Package.create(packageData);
