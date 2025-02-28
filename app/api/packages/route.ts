@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import dbConnect from '@/lib/db';
 import Package from '@/models/Package';
+import Agency from '@/models/Agency';
+import Statistic from '@/models/Statistic';
 import * as z from 'zod';
 import {authOptions} from '@/lib/auth'
 import cloudinary from 'cloudinary';
@@ -43,12 +45,111 @@ export async function GET(request: Request) {
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const agencyId = searchParams.get('agencyId');
+    const featured = searchParams.get('featured') === 'true';
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const destination = searchParams.get('destination');
+    const category = searchParams.getAll('category');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const status = searchParams.get('status') || 'Listado'; // Default to listed packages
+    const date = searchParams.get('date');
+    const minDuration = searchParams.get('minDuration');
+    const maxDuration = searchParams.get('maxDuration');
+    const travelers = searchParams.get('travelers');
 
-    const query = agencyId ? { agencyId } : {};
-    const packages = await Package.find(query).sort({ createdAt: -1 });
+    // Build the query
+    let query: any = {};
+
+    // Filter by agency if specified
+    if (agencyId) {
+      query.agencyId = agencyId;
+    }
+
+    // Filter by status (default to 'Listado')
+    query.status = status;
+
+    // Filter by destination if specified
+    if (destination) {
+      query.destination = { $regex: destination, $options: 'i' };
+    }
+
+    // Filter by category if specified
+    if (category && category.length > 0) {
+      query.category = { $in: category };
+    }
+
+    // Filter by price range if specified
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = parseFloat(minPrice);
+      if (maxPrice) query.price.$lte = parseFloat(maxPrice);
+    }
+
+    // Filter by date if specified
+    if (date) {
+      const selectedDate = new Date(date);
+      // Find packages with start dates on or after the selected date
+      query['startDates.date'] = { $gte: selectedDate };
+    }
+
+    // Filter by duration if specified
+    if (minDuration || maxDuration) {
+      query['duration.days'] = {};
+      if (minDuration) query['duration.days'].$gte = parseInt(minDuration);
+      if (maxDuration) query['duration.days'].$lte = parseInt(maxDuration);
+    }
+
+    // Filter by travelers if specified
+    if (travelers) {
+      const travelersCount = parseInt(travelers);
+      query.minPeople = { $lte: travelersCount };
+      query.maxPeople = { $gte: travelersCount };
+    }
+
+    // If featured is true, get packages from verified agencies with most views
+    if (featured) {
+      // Get verified agencies
+      const verifiedAgencies = await Agency.find({ verified: true }).select('_id');
+      const verifiedAgencyIds = verifiedAgencies.map(agency => agency._id);
+
+      // Only include packages from verified agencies
+      query.agencyId = { $in: verifiedAgencyIds };
+
+      // Get package view statistics
+      const packageStats = await Statistic.aggregate([
+        { $match: { type: 'view', agencyId: { $in: verifiedAgencyIds } } },
+        { $group: { _id: '$packageId', views: { $sum: 1 } } },
+        { $sort: { views: -1 } },
+        { $limit: limit }
+      ]);
+
+      // Get the package IDs with most views
+      const topPackageIds = packageStats
+          .filter(stat => stat._id) // Filter out null packageIds
+          .map(stat => stat._id);
+
+      // If we have top packages, filter by them
+      if (topPackageIds.length > 0) {
+        query._id = { $in: topPackageIds };
+
+        // Get the packages
+        const packages = await Package.find(query);
+
+        // Sort packages by view count (same order as topPackageIds)
+        const sortedPackages = topPackageIds
+            .map(id => packages.find(pkg => pkg._id.toString() === id.toString()))
+            .filter(Boolean); // Remove any undefined values
+
+        return NextResponse.json(sortedPackages);
+      }
+    }
+
+    // Regular query (not featured or no top packages found)
+    const packages = await Package.find(query).sort({ createdAt: -1 }).limit(limit);
 
     return NextResponse.json(packages);
   } catch (error) {
+    console.error('Error al obtener los paquetes:', error);
     return NextResponse.json(
         { error: 'Error al obtener los paquetes' },
         { status: 500 }

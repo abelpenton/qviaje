@@ -1,109 +1,82 @@
+//@ts-nocheck
 "use client";
 
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Search, MapPin, Star, Globe, Phone, Mail, ChevronRight } from "lucide-react";
+import { Search, MapPin, Star, Globe, Phone, Mail, ChevronRight, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-
-// Datos de ejemplo de agencias
-const agencies = [
-    {
-        id: 1,
-        name: "Perú Adventures",
-        logo: "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=200",
-        description: "Especialistas en turismo de aventura en Perú con más de 15 años de experiencia.",
-        location: "Cusco, Perú",
-        rating: 4.9,
-        reviews: 450,
-        verified: true,
-        specialties: ["Aventura", "Cultural", "Trekking"],
-        phone: "+51 984 123 456",
-        email: "info@peruadventures.com",
-        website: "www.peruadventures.com",
-        totalPackages: 24,
-        featuredReviews: [
-            {
-                id: 1,
-                user: "María González",
-                rating: 5,
-                date: "2024-03-15",
-                comment: "¡Excelente servicio! Los guías son muy profesionales y conocedores.",
-            },
-            {
-                id: 2,
-                user: "John Smith",
-                rating: 4.8,
-                date: "2024-03-10",
-                comment: "Muy buena organización y atención al cliente.",
-            }
-        ]
-    },
-    {
-        id: 2,
-        name: "Caribbean Tours",
-        logo: "https://images.unsplash.com/photo-1581609836630-9007630f7a7b?w=200",
-        description: "Tu mejor opción para vacaciones en el Caribe. Especialistas en paquetes todo incluido.",
-        location: "Punta Cana, República Dominicana",
-        rating: 4.8,
-        reviews: 325,
-        verified: true,
-        specialties: ["Playa", "Todo Incluido", "Lujo"],
-        phone: "+1 809 555 0123",
-        email: "info@caribbeantours.com",
-        website: "www.caribbeantours.com",
-        totalPackages: 18,
-        featuredReviews: [
-            {
-                id: 1,
-                user: "Carlos Ruiz",
-                rating: 5,
-                date: "2024-03-12",
-                comment: "Increíbles vacaciones en Punta Cana. Todo perfectamente organizado.",
-            }
-        ]
-    },
-    {
-        id: 3,
-        name: "Patagonia Explorer",
-        logo: "https://images.unsplash.com/photo-1581609914197-889d68da3b1f?w=200",
-        description: "Descubre la magia de la Patagonia con expertos locales. Aventuras únicas en el fin del mundo.",
-        location: "Bariloche, Argentina",
-        rating: 4.95,
-        reviews: 280,
-        verified: true,
-        specialties: ["Aventura", "Naturaleza", "Trekking"],
-        phone: "+54 294 444 5555",
-        email: "info@patagoniaexplorer.com",
-        website: "www.patagoniaexplorer.com",
-        totalPackages: 15,
-        featuredReviews: [
-            {
-                id: 1,
-                user: "Sophie Martin",
-                rating: 5,
-                date: "2024-03-08",
-                comment: "Una experiencia inolvidable en la Patagonia. Guías excepcionales.",
-            }
-        ]
-    }
-];
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AgenciasPage() {
+    const [agencies, setAgencies] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedSpecialty, setSelectedSpecialty] = useState("Todos");
+    const [selectedSpecialties, setSelectedSpecialties] = useState([]);
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
-    const specialties = ["Todos", "Aventura", "Cultural", "Playa", "Trekking", "Todo Incluido", "Lujo", "Naturaleza"];
+    const specialties = [
+        "Aventura", "Cultural", "Playa", "Trekking",
+        "Todo Incluido", "Lujo", "Naturaleza", "Familiar",
+        "Romántico", "Económico", "Montaña", "Ciudad"
+    ];
+
+    useEffect(() => {
+        const fetchAgencies = async () => {
+            try {
+                setLoading(true);
+                // Fetch verified agencies
+                const response = await fetch('/api/agencies?verified=true');
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar agencias');
+                }
+
+                const data = await response.json();
+                setAgencies(data);
+            } catch (error) {
+                console.error('Error fetching agencies:', error);
+                setAgencies([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAgencies();
+    }, []);
 
     // Filtrar agencias
     const filteredAgencies = agencies.filter(agency => {
-        const matchesSearch = agency.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const matchesSearch = !searchQuery ||
+            agency.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             agency.location.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesSpecialty = selectedSpecialty === "Todos" || agency.specialties.includes(selectedSpecialty);
+
+        const matchesSpecialty = selectedSpecialties.length === 0 ||
+            selectedSpecialties.some(specialty =>
+                agency.specialties?.includes(specialty) ||
+                agency.category?.includes(specialty)
+            );
 
         return matchesSearch && matchesSpecialty;
     });
+
+    const handleSpecialtyChange = (specialty) => {
+        setSelectedSpecialties(prev => {
+            if (prev.includes(specialty)) {
+                return prev.filter(s => s !== specialty);
+            } else {
+                return [...prev, specialty];
+            }
+        });
+    };
+
+    const clearFilters = () => {
+        setSearchQuery("");
+        setSelectedSpecialties([]);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -120,142 +93,198 @@ export default function AgenciasPage() {
             {/* Search and Filters */}
             <div className="bg-white border-b sticky top-0 z-10">
                 <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center gap-4">
-                        <div className="flex-1 relative">
+                    <div className="flex flex-col md:flex-row items-center gap-4">
+                        <div className="flex-1 relative w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <input
                                 type="text"
-                                placeholder="Buscar agencias..."
+                                placeholder="Buscar agencias por nombre o ubicación..."
                                 className="w-full pl-10 pr-4 py-2 rounded-full border border-input bg-background"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <select
-                            className="border rounded-full px-4 py-2"
-                            value={selectedSpecialty}
-                            onChange={(e) => setSelectedSpecialty(e.target.value)}
-                        >
-                            {specialties.map(specialty => (
-                                <option key={specialty} value={specialty}>
-                                    {specialty}
-                                </option>
-                            ))}
-                        </select>
                     </div>
                 </div>
             </div>
 
             {/* Main Content */}
             <main className="container mx-auto px-4 py-8">
-                <div className="space-y-6">
-                    {filteredAgencies.map((agency) => (
-                        <Card key={agency.id} className="p-6">
-                            <div className="flex items-start gap-6">
-                                {/* Logo y Detalles Principales */}
-                                <div className="relative h-24 w-24 rounded-lg overflow-hidden">
-                                    <Image
-                                        src={agency.logo}
-                                        alt={agency.name}
-                                        fill
-                                        className="object-cover"
-                                    />
+                {loading ? (
+                    <div className="space-y-6">
+                        {[1, 2, 3].map((i) => (
+                            <Card key={i} className="p-6">
+                                <div className="flex items-start gap-6">
+                                    <Skeleton className="h-24 w-24 rounded-lg" />
+                                    <div className="flex-1 space-y-2">
+                                        <Skeleton className="h-6 w-48" />
+                                        <Skeleton className="h-4 w-64" />
+                                        <Skeleton className="h-16 w-full" />
+                                        <div className="flex gap-2">
+                                            <Skeleton className="h-6 w-16 rounded-full" />
+                                            <Skeleton className="h-6 w-16 rounded-full" />
+                                            <Skeleton className="h-6 w-16 rounded-full" />
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-4 w-32" />
+                                            <Skeleton className="h-4 w-32" />
+                                        </div>
+                                    </div>
+                                    <Skeleton className="h-10 w-28" />
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h2 className="text-xl font-semibold">{agency.name}</h2>
-                                        {agency.verified && (
-                                            <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full">
-                        Verificado
-                      </span>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <>
+                        {filteredAgencies.length > 0 ? (
+                            <div className="space-y-6">
+                                {filteredAgencies.map((agency) => (
+                                    <Card key={agency._id} className="p-6">
+                                        <div className="flex flex-col md:flex-row items-start gap-6">
+                                            {/* Logo y Detalles Principales */}
+                                            <div className="relative h-24 w-24 rounded-lg overflow-hidden">
+                                                <Image
+                                                    src={agency.logo || "https://via.placeholder.com/200?text=No+Logo"}
+                                                    alt={agency.name}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h2 className="text-xl font-semibold">{agency.name}</h2>
+                                                    {agency.verified && (
+                                                        <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full flex items-center">
+                                                            <CheckCircle className="h-3 w-3 mr-1" />
+                                                            Verificado
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                                                    <div className="flex items-center gap-1">
+                                                        <MapPin className="h-4 w-4" />
+                                                        {agency.location}
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                        <span>{agency.rating || "4.5"}</span>
+                                                        <span>({agency.reviews || "0"} reseñas)</span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-muted-foreground mb-4">{agency.description}</p>
+
+                                                {/* Especialidades */}
+                                                <div className="flex flex-wrap gap-2 mb-4">
+                                                    {(agency.specialties || agency.category || ["General"]).map((specialty) => (
+                                                        <span
+                                                            key={specialty}
+                                                            className="bg-gray-100 text-gray-800 text-xs px-2.5 py-1 rounded-full"
+                                                        >
+                                                            {specialty}
+                                                        </span>
+                                                    ))}
+                                                </div>
+
+                                                {/* Información de Contacto */}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                                    {agency.phone && (
+                                                        <div className="flex items-center gap-2">
+                                                            <Phone className="h-4 w-4 text-muted-foreground" />
+                                                            <span>{agency.phone}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        <Mail className="h-4 w-4 text-muted-foreground" />
+                                                        <span>{agency.email}</span>
+                                                    </div>
+                                                    {agency.website && (
+                                                        <div className="flex items-center gap-2">
+                                                            <Globe className="h-4 w-4 text-muted-foreground" />
+                                                            <a
+                                                                href={agency.website.startsWith('http') ? agency.website : `https://${agency.website}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="hover:underline"
+                                                            >
+                                                                {agency.website}
+                                                            </a>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium">{agency.totalPackages || "0"} paquetes disponibles</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Botón Ver Paquetes */}
+                                            <div className="self-center mt-4 md:mt-0">
+                                                <Link href={`/explorar?agencyId=${agency._id}`}>
+                                                    <Button variant="outline">
+                                                        Ver Paquetes
+                                                        <ChevronRight className="h-4 w-4 ml-2" />
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        </div>
+
+                                        {/* Redes Sociales */}
+                                        {agency.socialMedia && Object.values(agency.socialMedia).some(value => value) && (
+                                            <div className="mt-6 pt-6 border-t">
+                                                <h3 className="font-semibold mb-4">Redes Sociales</h3>
+                                                <div className="flex flex-wrap gap-4">
+                                                    {agency.socialMedia.facebook && (
+                                                        <a
+                                                            href={agency.socialMedia.facebook}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-600 hover:underline flex items-center"
+                                                        >
+                                                            Facebook
+                                                            <ChevronRight className="h-4 w-4" />
+                                                        </a>
+                                                    )}
+                                                    {agency.socialMedia.instagram && (
+                                                        <a
+                                                            href={agency.socialMedia.instagram}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-pink-600 hover:underline flex items-center"
+                                                        >
+                                                            Instagram
+                                                            <ChevronRight className="h-4 w-4" />
+                                                        </a>
+                                                    )}
+                                                    {agency.socialMedia.twitter && (
+                                                        <a
+                                                            href={agency.socialMedia.twitter}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-400 hover:underline flex items-center"
+                                                        >
+                                                            Twitter
+                                                            <ChevronRight className="h-4 w-4" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
                                         )}
-                                    </div>
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                                        <div className="flex items-center gap-1">
-                                            <MapPin className="h-4 w-4" />
-                                            {agency.location}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                            <span>{agency.rating}</span>
-                                            <span>({agency.reviews} reseñas)</span>
-                                        </div>
-                                    </div>
-                                    <p className="text-muted-foreground mb-4">{agency.description}</p>
-
-                                    {/* Especialidades */}
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {agency.specialties.map((specialty) => (
-                                            <span
-                                                key={specialty}
-                                                className="bg-gray-100 text-gray-800 text-xs px-2.5 py-1 rounded-full"
-                                            >
-                        {specialty}
-                      </span>
-                                        ))}
-                                    </div>
-
-                                    {/* Información de Contacto */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <Phone className="h-4 w-4 text-muted-foreground" />
-                                            <span>{agency.phone}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Mail className="h-4 w-4 text-muted-foreground" />
-                                            <span>{agency.email}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Globe className="h-4 w-4 text-muted-foreground" />
-                                            <span>{agency.website}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">{agency.totalPackages} paquetes disponibles</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Botón Ver Paquetes */}
-                                <Link href={`/agencias/${agency.id}/paquetes`}>
-                                    <Button variant="outline" className="self-center">
-                                        Ver Paquetes
-                                        <ChevronRight className="h-4 w-4 ml-2" />
-                                    </Button>
-                                </Link>
+                                    </Card>
+                                ))}
                             </div>
-
-                            {/* Reseñas Destacadas */}
-                            <div className="mt-6 pt-6 border-t">
-                                <h3 className="font-semibold mb-4">Reseñas Destacadas</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {agency.featuredReviews.map((review) => (
-                                        <div key={review.id} className="bg-gray-50 rounded-lg p-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="font-medium">{review.user}</span>
-                                                <span className="text-sm text-muted-foreground">
-                          {new Date(review.date).toLocaleDateString()}
-                        </span>
-                                            </div>
-                                            <div className="flex items-center gap-1 mb-2">
-                                                {Array.from({ length: 5 }).map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`h-4 w-4 ${
-                                                            i < review.rating
-                                                                ? "fill-yellow-400 text-yellow-400"
-                                                                : "text-gray-300"
-                                                        }`}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <p className="text-sm text-muted-foreground">{review.comment}</p>
-                                        </div>
-                                    ))}
-                                </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <h3 className="text-lg font-medium mb-2">No se encontraron agencias</h3>
+                                <p className="text-muted-foreground mb-4">
+                                    No hay agencias que coincidan con los filtros seleccionados
+                                </p>
+                                <Button onClick={clearFilters}>Limpiar filtros</Button>
                             </div>
-                        </Card>
-                    ))}
-                </div>
+                        )}
+                    </>
+                )}
             </main>
         </div>
     );
