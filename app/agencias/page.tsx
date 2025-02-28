@@ -29,7 +29,7 @@ export default function AgenciasPage() {
             try {
                 setLoading(true);
                 // Fetch verified agencies
-                const response = await fetch('/api/agencies?verified=true');
+                const response = await fetch('/api/agencies');
 
                 if (!response.ok) {
                     throw new Error('Error al cargar agencias');

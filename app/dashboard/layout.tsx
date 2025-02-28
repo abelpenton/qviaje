@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import {redirect, useRouter} from 'next/navigation'
 import {useEffect, useState} from 'react'
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -19,17 +19,22 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = useSession();
+  const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     if (!session) {
-      redirect('/auth/login');
+      router.push('/auth/login');
     }
   }, [session])
 
 
   if (session.status === 'loading') {
     return <div>Cargando...</div>;
+  }
+
+  if (session.status === 'unauthenticated') {
+    router.push('/auth/login');
   }
 
   const navigation = [

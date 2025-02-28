@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import {useRef, useState} from 'react'
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Menu, X, Plane } from "lucide-react";
-import {redirect, useRouter} from 'next/navigation'
+import {useRouter} from 'next/navigation'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session } = useSession(); // Get session
+
   const router = useRouter()
+  const selectRef = useRef(null);
+
+  console.log(session)
 
   return (
       <header className="border-b">
@@ -42,8 +46,13 @@ export default function Header() {
               {session ? (
                   // If logged in, show name & logout
                   <div className="flex items-center space-x-4">
-                    <span className="text-foreground">{session.user?.name}</span>
-                    <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard")}>
+                    <Button variant="outline" className="w-full" onClick={() => {
+                      if (session.user.type === 'agency') {
+                        return router.push("/dashboard");
+                      }
+
+                      return router.push("/profile");
+                    }}>
                       Mi Perfil
                     </Button>
                     <Button variant="outline" onClick={() => signOut()}>
@@ -56,7 +65,7 @@ export default function Header() {
                     <Link href="/auth/login">
                       <Button variant="outline">Iniciar Sesión</Button>
                     </Link>
-                    <Link href="/auth/register">
+                    <Link href="/auth">
                       <Button>Registrarse</Button>
                     </Link>
                   </>
@@ -90,8 +99,13 @@ export default function Header() {
                 {session ? (
                     // If logged in, show name & logout
                     <div className="space-y-2 text-center">
-                      <p className="text-foreground">{session.user?.name}</p>
-                      <Button variant="outline" className="w-full" onClick={() => router.push("/dashboard")}>
+                      <Button variant="outline" className="w-full" onClick={() => {
+                        if (session.user.type === 'agency') {
+                          return router.push("/dashboard");
+                        }
+
+                        return router.push("/profile");
+                      }}>
                         Mi Perfil
                       </Button>
                       <Button variant="outline" className="w-full" onClick={() => signOut()}>
@@ -106,7 +120,7 @@ export default function Header() {
                           Iniciar Sesión
                         </Button>
                       </Link>
-                      <Link href="/auth/register">
+                      <Link href="/auth">
                         <Button className="w-full">Registrarse</Button>
                       </Link>
                     </div>

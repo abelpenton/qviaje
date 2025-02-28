@@ -1,4 +1,3 @@
-//@ts-nocheck
 // /paquetes/[id]/page.tsx
 import { notFound } from 'next/navigation';
 import PackageDetail from './PackageDetail';
@@ -73,7 +72,6 @@ async function getPackageData(id) {
         email: packageData.agencyId.email,
         website: packageData.agencyId.website,
       } : null,
-      reviews: [], // Podríamos agregar reseñas en el futuro
       category: packageData.category || [],
     };
   } catch (error) {

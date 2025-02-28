@@ -1,15 +1,19 @@
 // @ts-nocheck
 "use client";
 
-import {useEffect, useState} from 'react'
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {   Calendar,   Users,   MapPin,   Star,   Clock,  Download,   Building2,   Phone,   Mail,   Globe,   ChevronRight } from 'lucide-react';
+import { Calendar, Users, MapPin, Star, Clock, Download, Building2, Phone, Mail, Globe, ChevronRight } from 'lucide-react';
 import ItineraryPDF from '@/app/paquetes/[id]/PdfItinerary'
 import { pdf } from "@react-pdf/renderer";
-import Link from 'next/link'
+import Link from 'next/link';
+import FavoriteButton from './FavoriteButton';
+import {useSession} from 'next-auth/react'
+import ReviewsList from './ReviewList';
+import ReviewForm from './ReviewForm';
 
 export default function PackageDetail({ packageData, similarPackages = [] }) {
     const [selectedDate, setSelectedDate] = useState(
@@ -23,6 +27,56 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
             : ""
     );
     const [travelers, setTravelers] = useState(packageData.minPeople || 1);
+    const { data: session, status } = useSession();
+
+    // Reviews state
+    const [reviews, setReviews] = useState([]);
+    const [loadingReviews, setLoadingReviews] = useState(true);
+
+    useEffect(() => {
+        // Fetch reviews when component mounts
+        fetchReviews();
+
+        // Track view
+        trackView();
+    }, []);
+
+    const fetchReviews = async () => {
+        try {
+            setLoadingReviews(true);
+            const response = await fetch(`/api/reviews?packageId=${packageData.id}`);
+
+            if (!response.ok) {
+                throw new Error('Error al cargar reseñas');
+            }
+
+            const data = await response.json();
+            setReviews(data);
+        } catch (error) {
+            console.error('Error fetching reviews:', error);
+        } finally {
+            setLoadingReviews(false);
+        }
+    };
+
+    const trackView = async () => {
+        try {
+            await fetch(`/api/statistics/track`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    packageId: packageData.id,
+                    agencyId: packageData.agency.id,
+                    type: 'view'
+                }),
+                cache: 'no-store'
+            });
+        } catch (error) {
+            console.error('Error al registrar vista:', error);
+        }
+    };
 
     const handleDownloadPDF = async () => {
         // Use actual package data for the PDF
@@ -35,6 +89,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
             rating: packageData.rating || (packageData.agency?.rating || 4.5),
             reviews: packageData.reviews?.length || (packageData.agency?.reviews || 0),
             dates: packageData.dates || `${packageData.duration.days} días / ${packageData.duration.nights} noches`,
+            difficulty: "Moderado", // Valor por defecto
             minPeople: packageData.minPeople,
             maxPeople: packageData.maxPeople,
             startDates: packageData.startDates || [],
@@ -53,41 +108,6 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
         document.body.removeChild(a);
     };
 
-    const handleInquiry = async () => {
-        try {
-            await fetch('/api/statistics/track', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    packageId: packageData.id,
-                    agencyId: packageData.agency.id,
-                    type: 'inquiry'
-                })
-            });
-        } catch (error) {
-            console.error('Error al registrar consulta:', error);
-        }
-    };
-
-    useEffect(() => {
-        (async () => {
-            await fetch(`/api/statistics/track`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    packageId: packageData.id,
-                    agencyId: packageData.agency.id,
-                    type: 'view'
-                }),
-                cache: 'no-store'
-            });
-        })()
-    }, [])
-
     // Format date for display
     const formatDate = (dateString) => {
         try {
@@ -105,7 +125,9 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
     // Generate WhatsApp link with package details
     const generateWhatsAppLink = async () => {
         if (!packageData.agency?.phone) return '#';
-        await handleInquiry()
+
+        // Track inquiry
+        await handleInquiry();
 
         // Clean phone number (remove spaces, dashes, etc.)
         const cleanPhone = packageData.agency.phone.replace(/\D/g, '');
@@ -134,10 +156,34 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
         window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
+    // Track inquiry when clicking on WhatsApp button
+    const handleInquiry = async () => {
+        try {
+            await fetch('/api/statistics/track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    packageId: packageData.id,
+                    agencyId: packageData.agency.id,
+                    type: 'inquiry'
+                })
+            });
+        } catch (error) {
+            console.error('Error al registrar consulta:', error);
+        }
+    };
+
     // Calculate total price
     const calculateTotalPrice = () => {
         const pricePerPerson = selectedDate.price || packageData.price;
         return pricePerPerson * travelers;
+    };
+
+    // Handle new review added
+    const handleReviewAdded = (newReview) => {
+        setReviews(prevReviews => [newReview, ...prevReviews]);
     };
 
     return (
@@ -371,71 +417,18 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                             </TabsContent>
 
                             <TabsContent value="reviews" className="space-y-6">
-                                <Card className="p-6">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div>
-                                            <h3 className="text-xl font-semibold">Reseñas de la Agencia</h3>
-                                            <div className="flex items-center gap-2">
-                                                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400"/>
-                                                <span className="font-medium text-lg">
-                                                    {packageData.agency?.rating || 0}
-                                                </span>
-                                                <span className="text-muted-foreground">
-                                                    ({packageData.agency?.reviews || 0} reseñas)
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <Button>Escribir Reseña</Button>
-                                    </div>
-                                    {packageData.reviews && packageData.reviews.length > 0 ? (
-                                        <div className="space-y-6">
-                                            {packageData.reviews.map((review) => (
-                                                <div key={review.id} className="border-b pb-6 last:border-0">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <h4 className="font-medium">{review.user}</h4>
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {formatDate(review.date)}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 mb-2">
-                                                        {Array.from({length: 5}).map((_, i) => (
-                                                            <Star
-                                                                key={i}
-                                                                className={`h-4 w-4 ${
-                                                                    i < Number(review.rating)
-                                                                        ? "fill-yellow-400 text-yellow-400"
-                                                                        : "text-gray-300"
-                                                                }`}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                    <p className="text-muted-foreground mb-4">{review.comment}</p>
-                                                    {review.images && review.images.length > 0 && (
-                                                        <div className="flex gap-2">
-                                                            {review.images.map((image, index) => (
-                                                                <div
-                                                                    key={index}
-                                                                    className="relative h-20 w-20 rounded-lg overflow-hidden"
-                                                                >
-                                                                    <Image
-                                                                        src={image}
-                                                                        alt={`Imagen de reseña ${index + 1}`}
-                                                                        fill
-                                                                        className="object-cover"
-                                                                    />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-center text-muted-foreground">
-                                            No hay reseñas disponibles para este paquete.
-                                        </p>
-                                    )}
-                                </Card>
+                                {/* Review Form */}
+                                <ReviewForm
+                                    packageId={packageData.id}
+                                    onReviewAdded={handleReviewAdded}
+                                />
+
+                                {/* Reviews List */}
+                                <ReviewsList
+                                    packageId={packageData.id}
+                                    initialReviews={reviews}
+                                    loading={loadingReviews}
+                                />
                             </TabsContent>
                         </Tabs>
                     </div>
@@ -520,10 +513,13 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                             </div>
 
                             <div className="space-y-4">
-                                <Button className="w-full" onClick={generateWhatsAppLink}>
-                                    <Phone className="h-4 w-4 mr-2"/>
-                                    Consultar por WhatsApp
-                                </Button>
+                                <div className="flex gap-2">
+                                    <Button className="flex-1" onClick={generateWhatsAppLink}>
+                                        <Phone className="h-4 w-4 mr-2"/>
+                                        Consultar
+                                    </Button>
+                                    <FavoriteButton packageId={packageData.id} />
+                                </div>
                                 <Button variant="outline" className="w-full" onClick={handleDownloadPDF}>
                                     <Download className="h-4 w-4 mr-2"/>
                                     Descargar Itinerario

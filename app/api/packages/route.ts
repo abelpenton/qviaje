@@ -9,6 +9,7 @@ import Statistic from '@/models/Statistic';
 import * as z from 'zod';
 import {authOptions} from '@/lib/auth'
 import cloudinary from 'cloudinary';
+import {ObjectId} from 'mongodb'
 
 cloudinary.v2.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -46,12 +47,12 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const agencyId = searchParams.get('agencyId');
     const featured = searchParams.get('featured') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '100');
     const destination = searchParams.get('destination');
     const category = searchParams.getAll('category');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
-    const status = searchParams.get('status') || 'Listado'; // Default to listed packages
+    const status = searchParams.get('status') ? [searchParams.get('status')] : ['Creado', 'Listado', 'Archivado']; // Default to listed packages
     const date = searchParams.get('date');
     const minDuration = searchParams.get('minDuration');
     const maxDuration = searchParams.get('maxDuration');
@@ -62,11 +63,11 @@ export async function GET(request: Request) {
 
     // Filter by agency if specified
     if (agencyId) {
-      query.agencyId = agencyId;
+      query.agencyId = new ObjectId(agencyId);
     }
 
     // Filter by status (default to 'Listado')
-    query.status = status;
+    query.status = { $in: status };
 
     // Filter by destination if specified
     if (destination) {
@@ -144,6 +145,7 @@ export async function GET(request: Request) {
       }
     }
 
+    console.log(query)
     // Regular query (not featured or no top packages found)
     const packages = await Package.find(query).sort({ createdAt: -1 }).limit(limit);
 

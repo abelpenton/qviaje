@@ -20,17 +20,17 @@ export default function Footer() {
             <h3 className="font-semibold mb-4">Para Viajeros</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/paquetes" className="text-muted-foreground hover:text-primary">
+                <Link href="/explorar" className="text-muted-foreground hover:text-primary">
                   Explorar Paquetes
                 </Link>
               </li>
               <li>
-                <Link href="/destinos" className="text-muted-foreground hover:text-primary">
-                  Destinos Populares
+                <Link href="/profile" className="text-muted-foreground hover:text-primary">
+                  Mis Favoritos
                 </Link>
               </li>
               <li>
-                <Link href="/como-funciona" className="text-muted-foreground hover:text-primary">
+                <Link href="/preguntas-frecuentes" className="text-muted-foreground hover:text-primary">
                   Cómo Funciona
                 </Link>
               </li>
@@ -41,18 +41,18 @@ export default function Footer() {
             <h3 className="font-semibold mb-4">Para Agencias</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/agencias/registro" className="text-muted-foreground hover:text-primary">
+                <Link href="/auth/register" className="text-muted-foreground hover:text-primary">
                   Registrar Agencia
                 </Link>
               </li>
               <li>
-                <Link href="/agencias/centro-ayuda" className="text-muted-foreground hover:text-primary">
-                  Centro de Ayuda
+                <Link href="/dashboard" className="text-muted-foreground hover:text-primary">
+                  Analisis De Ventas
                 </Link>
               </li>
               <li>
-                <Link href="/agencias/recursos" className="text-muted-foreground hover:text-primary">
-                  Recursos
+                <Link href="/preguntas-frecuentes" className="text-muted-foreground hover:text-primary">
+                  Cómo Funciona
                 </Link>
               </li>
             </ul>
@@ -72,7 +72,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/terminos" className="text-muted-foreground hover:text-primary">
+                <Link href="/terminos-condiciones" className="text-muted-foreground hover:text-primary">
                   Términos y Condiciones
                 </Link>
               </li>

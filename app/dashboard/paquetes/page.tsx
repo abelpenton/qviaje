@@ -15,17 +15,18 @@ import {
 import {Plus, Pencil, Trash, Archive, Upload, Eye} from 'lucide-react'
 import Link from 'next/link';
 import {useRouter} from 'next/navigation'
+import {useSession} from 'next-auth/react'
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter()
+  const {data: session} = useSession()
 
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        // Hacer la solicitud para obtener los paquetes de la agencia logueada
-        const response = await fetch('/api/packages'); // Asegúrate de que la API esté configurada correctamente
+        const response = await fetch('/api/packages?agencyId=' + session.user.id); // Asegúrate de que la API esté configurada correctamente
         const data = await response.json();
 
         if (response.ok) {

@@ -1,3 +1,4 @@
+//@ts-nocheck
 "use client"
 
 import { useState, useEffect } from "react";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, MapPin, Calendar as CalendarIcon, Users, Heart, Star, ArrowRight } from "lucide-react";
+import {Search, MapPin, Calendar as CalendarIcon, Users, Heart, Star, ArrowRight, MessageSquare} from 'lucide-react'
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,7 +33,7 @@ export default function Home() {
       try {
         setLoading(true);
         // Fetch the top 5 most visited packages from verified agencies
-        const response = await fetch('/api/packages?featured=true&limit=5');
+        const response = await fetch('/api/packages?featured=true&limit=5&status=Listado');
 
         if (!response.ok) {
           throw new Error('Error al cargar paquetes destacados');
@@ -107,7 +108,7 @@ export default function Home() {
                           className="rounded-full border-white/30 text-black hover:bg-white hover:text-black transition-colors"
                       >
                         <CalendarIcon className="h-4 w-4 mr-2"/>
-                        {selectedDate ? format(selectedDate, "dd MMM", { locale: es }) : "Fechas"}
+                        {selectedDate ? format(selectedDate, "dd MMM", {locale: es}) : "Fechas"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="center">
@@ -182,7 +183,7 @@ export default function Home() {
         <section className="flex items-center justify-center py-20 bg-gray-50 w-full">
           <div className="container text-center">
             <h2 className="text-3xl font-bold mb-12">¿Por qué elegir QViaje?</h2>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-4 gap-8">
               <div className="text-center">
                 <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Search className="h-8 w-8 text-primary"/>
@@ -208,6 +209,15 @@ export default function Home() {
                 <h3 className="text-xl font-semibold mb-2">Mejores Precios</h3>
                 <p className="text-muted-foreground">
                   Accede a ofertas exclusivas y los mejores precios del mercado
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MessageSquare className="h-8 w-8 text-primary"/>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Reseñas Verificadas</h3>
+                <p className="text-muted-foreground">
+                  Lee opiniones reales de viajeros que han disfrutado la experiencia
                 </p>
               </div>
             </div>
@@ -286,7 +296,8 @@ export default function Home() {
               Únete a QViaje y llega a miles de viajeros potenciales. Digitaliza tu negocio y aumenta tus ventas.
             </p>
             <Link href="/auth/register">
-              <Button variant="outline" className="rounded-full border-white text-black hover:bg-white hover:text-gray-800">
+              <Button variant="outline"
+                      className="rounded-full border-white text-black hover:bg-white hover:text-gray-800">
                 Registra tu agencia
               </Button>
             </Link>
