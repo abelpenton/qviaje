@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import { useState } from 'react';
+import {useEffect, useState} from 'react'
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -53,6 +53,41 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
         document.body.removeChild(a);
     };
 
+    const handleInquiry = async () => {
+        try {
+            await fetch('/api/statistics/track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    packageId: packageData.id,
+                    agencyId: packageData.agency.id,
+                    type: 'inquiry'
+                })
+            });
+        } catch (error) {
+            console.error('Error al registrar consulta:', error);
+        }
+    };
+
+    useEffect(() => {
+        (async () => {
+            await fetch(`/api/statistics/track`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    packageId: packageData.id,
+                    agencyId: packageData.agency.id,
+                    type: 'view'
+                }),
+                cache: 'no-store'
+            });
+        })()
+    }, [])
+
     // Format date for display
     const formatDate = (dateString) => {
         try {
@@ -68,8 +103,9 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
     };
 
     // Generate WhatsApp link with package details
-    const generateWhatsAppLink = () => {
+    const generateWhatsAppLink = async () => {
         if (!packageData.agency?.phone) return '#';
+        await handleInquiry()
 
         // Clean phone number (remove spaces, dashes, etc.)
         const cleanPhone = packageData.agency.phone.replace(/\D/g, '');
@@ -95,7 +131,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
         // Request more information
         message += `\n\n¿Podrían proporcionarme más información sobre este paquete? Gracias.`;
 
-        return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
     // Calculate total price
@@ -484,12 +520,10 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                             </div>
 
                             <div className="space-y-4">
-                                <a href={generateWhatsAppLink()} target="_blank" rel="noopener noreferrer" className="block w-full">
-                                    <Button className="w-full">
-                                        <Phone className="h-4 w-4 mr-2"/>
-                                        Consultar por WhatsApp
-                                    </Button>
-                                </a>
+                                <Button className="w-full" onClick={generateWhatsAppLink}>
+                                    <Phone className="h-4 w-4 mr-2"/>
+                                    Consultar por WhatsApp
+                                </Button>
                                 <Button variant="outline" className="w-full" onClick={handleDownloadPDF}>
                                     <Download className="h-4 w-4 mr-2"/>
                                     Descargar Itinerario

@@ -1,3 +1,4 @@
+//@ts-nocheck
 // /paquetes/[id]/page.tsx
 import { notFound } from 'next/navigation';
 import PackageDetail from './PackageDetail';
