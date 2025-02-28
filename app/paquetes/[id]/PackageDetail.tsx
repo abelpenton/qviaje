@@ -86,7 +86,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
             location: packageData.location || packageData.destination,
             images: packageData.images.map(img => img.url || img),
             price: packageData.price,
-            rating: packageData.rating || (packageData.agency?.rating || 4.5),
+            rating: packageData.rating || (packageData.agency?.rating),
             reviews: packageData.reviews?.length || (packageData.agency?.reviews || 0),
             dates: packageData.dates || `${packageData.duration.days} días / ${packageData.duration.nights} noches`,
             difficulty: "Moderado", // Valor por defecto
@@ -215,7 +215,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                             </div>
                             <div className="flex items-center gap-2">
                                 <Star className="h-5 w-5 fill-yellow-400 text-yellow-400"/>
-                                <span>{packageData.rating || (packageData.agency?.rating || 4.5)}</span>
+                                <span>{packageData.rating || (packageData.agency?.rating)}</span>
                                 <span>({packageData.reviews?.length || (packageData.agency?.reviews || 0)} reseñas)</span>
                             </div>
                         </div>

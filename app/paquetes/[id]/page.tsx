@@ -1,4 +1,4 @@
-// /paquetes/[id]/page.tsx
+//@ts-nocheck
 import { notFound } from 'next/navigation';
 import PackageDetail from './PackageDetail';
 import dbConnect from '@/lib/db';
