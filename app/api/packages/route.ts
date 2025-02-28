@@ -1,15 +1,15 @@
 //@ts-nocheck
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import dbConnect from '@/lib/db';
 import Package from '@/models/Package';
 import Agency from '@/models/Agency';
+import Review from '@/models/Review';
 import Statistic from '@/models/Statistic';
 import * as z from 'zod';
-import {authOptions} from '@/lib/auth'
+import { authOptions } from '@/lib/auth';
 import cloudinary from 'cloudinary';
-import {ObjectId} from 'mongodb'
+import { ObjectId } from 'mongodb';
 
 cloudinary.v2.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -136,20 +136,61 @@ export async function GET(request: Request) {
         // Get the packages
         const packages = await Package.find(query);
 
+        // Get reviews for each package
+        const packagesWithReviews = await Promise.all(
+            packages.map(async (pkg) => {
+              // Get reviews count and average rating
+              const reviews = await Review.find({ packageId: pkg._id });
+              const reviewCount = reviews.length;
+              let averageRating = 0;
+
+              if (reviewCount > 0) {
+                const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+                averageRating = parseFloat((totalRating / reviewCount).toFixed(1));
+              }
+
+              return {
+                ...pkg.toObject(),
+                rating: averageRating,
+                reviews: reviewCount
+              };
+            })
+        );
+
         // Sort packages by view count (same order as topPackageIds)
         const sortedPackages = topPackageIds
-            .map(id => packages.find(pkg => pkg._id.toString() === id.toString()))
+            .map(id => packagesWithReviews.find(pkg => pkg._id.toString() === id.toString()))
             .filter(Boolean); // Remove any undefined values
 
         return NextResponse.json(sortedPackages);
       }
     }
 
-    console.log(query)
     // Regular query (not featured or no top packages found)
     const packages = await Package.find(query).sort({ createdAt: -1 }).limit(limit);
 
-    return NextResponse.json(packages);
+    // Get reviews for each package
+    const packagesWithReviews = await Promise.all(
+        packages.map(async (pkg) => {
+          // Get reviews count and average rating
+          const reviews = await Review.find({ packageId: pkg._id });
+          const reviewCount = reviews.length;
+          let averageRating = 0;
+
+          if (reviewCount > 0) {
+            const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+            averageRating = parseFloat((totalRating / reviewCount).toFixed(1));
+          }
+
+          return {
+            ...pkg.toObject(),
+            rating: averageRating,
+            reviews: reviewCount
+          };
+        })
+    );
+
+    return NextResponse.json(packagesWithReviews);
   } catch (error) {
     console.error('Error al obtener los paquetes:', error);
     return NextResponse.json(

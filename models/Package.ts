@@ -1,102 +1,112 @@
 import mongoose from 'mongoose';
 
-const ItineraryDaySchema = new mongoose.Schema({
-  day: {
-    type: Number,
-    required: true,
-  },
-  title: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  activities: [{
-    time: String,
-    description: String,
-  }],
-  meals: {
-    breakfast: Boolean,
-    lunch: Boolean,
-    dinner: Boolean,
-  },
-  accommodation: {
-    type: String,
-    required: true,
-  },
-});
-
 const PackageSchema = new mongoose.Schema({
-  agencyId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Agency',
-    required: true,
-  },
   title: {
     type: String,
-    required: [true, 'Por favor ingrese el título del paquete'],
-    minlength: [5, 'El título debe tener al menos 5 caracteres'],
+    required: [true, 'Por favor ingrese un título'],
+    trim: true,
   },
   description: {
     type: String,
     required: [true, 'Por favor ingrese una descripción'],
-    minlength: [20, 'La descripción debe tener al menos 20 caracteres'],
+    trim: true,
   },
   destination: {
     type: String,
-    required: [true, 'Por favor ingrese el destino'],
+    required: [true, 'Por favor ingrese un destino'],
+    trim: true,
   },
   price: {
     type: Number,
-    required: [true, 'Por favor ingrese el precio'],
-    min: [0, 'El precio no puede ser negativo'],
+    required: [true, 'Por favor ingrese un precio'],
+    min: 0,
   },
   duration: {
     days: {
       type: Number,
-      required: true,
+      required: [true, 'Por favor ingrese la duración en días'],
+      min: 1,
     },
     nights: {
       type: Number,
-      required: true,
+      required: [true, 'Por favor ingrese la duración en noches'],
+      min: 0,
     },
   },
-  included: [{
-    type: String,
-    required: true,
-  }],
-  notIncluded: [{
-    type: String,
-    required: true,
-  }],
-  images: [{
-    url: String,
-    alt: String,
-  }],
-  itinerary: [ItineraryDaySchema],
-  startDates: [{
-    date: Date,
-    availableSpots: Number,
-    price: Number,
-  }],
-  category: [{
-    type: String,
-    enum: ['Playa', 'Montaña', 'Ciudad', 'Aventura', 'Relax', 'Cultural', 'Familiar', 'Romántico', 'Lujo', 'Económico'],
-  }],
-  minPeople: {
-    type: Number,
-    default: 1,
+  included: {
+    type: [String],
+    required: [true, 'Por favor ingrese qué incluye el paquete'],
   },
-  maxPeople: {
-    type: Number,
+  notIncluded: {
+    type: [String],
+    required: [true, 'Por favor ingrese qué no incluye el paquete'],
+  },
+  images: [
+    {
+      url: String,
+      alt: String,
+    },
+  ],
+  agencyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Agency',
     required: true,
   },
   status: {
     type: String,
     enum: ['Creado', 'Listado', 'Archivado'],
     default: 'Creado',
+  },
+  minPeople: {
+    type: Number,
+    default: 1,
+    min: 1,
+  },
+  maxPeople: {
+    type: Number,
+    required: [true, 'Por favor ingrese el máximo de personas'],
+    min: 1,
+  },
+  startDates: [
+    {
+      date: {
+        type: Date,
+        required: true,
+      },
+      availableSpots: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      price: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+    },
+  ],
+  itinerary: [
+    {
+      day: Number,
+      title: String,
+      description: String,
+      activities: [
+        {
+          time: String,
+          description: String,
+        },
+      ],
+      meals: {
+        breakfast: Boolean,
+        lunch: Boolean,
+        dinner: Boolean,
+      },
+      accommodation: String,
+    },
+  ],
+  category: {
+    type: [String],
+    default: [],
   },
   createdAt: {
     type: Date,
@@ -108,9 +118,12 @@ const PackageSchema = new mongoose.Schema({
   },
 });
 
-PackageSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
+PackageSchema.index({ agencyId: 1 });
+PackageSchema.index({ destination: 1 });
+PackageSchema.index({ status: 1 });
+PackageSchema.index({ category: 1 });
+PackageSchema.index({ price: 1 });
+PackageSchema.index({ 'duration.days': 1 });
+PackageSchema.index({ 'startDates.date': 1 });
 
 export default mongoose.models.Package || mongoose.model('Package', PackageSchema);

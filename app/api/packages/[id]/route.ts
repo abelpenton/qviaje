@@ -1,8 +1,11 @@
+
 //@ts-nocheck
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import dbConnect from '@/lib/db';
 import Package from '@/models/Package';
+import Review from '@/models/Review';
+import Agency from '@/models/Agency';
 import { authOptions } from '@/lib/auth';
 import cloudinary from 'cloudinary';
 
@@ -30,7 +33,31 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(packageData);
+    // Obtener la agencia asociada al paquete
+    const agency = await Agency.findById(packageData.agencyId).select('-password');
+
+    // Obtener las reseñas del paquete
+    const reviews = await Review.find({ packageId: id })
+        .populate('userId', 'name photo')
+        .sort({ createdAt: -1 });
+
+    // Calcular el rating promedio
+    let averageRating = 0;
+    if (reviews.length > 0) {
+      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+      averageRating = parseFloat((totalRating / reviews.length).toFixed(1));
+    }
+
+    // Combinar toda la información
+    const packageWithDetails = {
+      ...packageData.toObject(),
+      agency: agency ? agency.toObject() : null,
+      reviews: reviews,
+      rating: averageRating,
+      reviewCount: reviews.length
+    };
+
+    return NextResponse.json(packageWithDetails);
   } catch (error) {
     console.error('Error al obtener el paquete:', error);
     return NextResponse.json(

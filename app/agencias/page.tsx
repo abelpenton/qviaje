@@ -170,7 +170,7 @@ export default function AgenciasPage() {
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                                        <span>{agency.rating || "4.5"}</span>
+                                                        <span>{agency.rating || "0"}</span>
                                                         <span>({agency.reviews || "0"} reseñas)</span>
                                                     </div>
                                                 </div>
