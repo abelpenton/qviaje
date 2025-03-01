@@ -181,107 +181,116 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section className="flex items-center justify-center py-20 bg-gray-50 w-full">
-          <div className="container text-center">
-            <h2 className="text-3xl font-bold mb-12">¿Por qué elegir QViaje?</h2>
+        <section className="flex items-center justify-center py-24 bg-gradient-to-b from-gray-50 to-white w-full">
+          <div className="container text-center px-6">
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-12">
+              ¿Por qué elegir <span className="text-primary">QViaje?</span>
+            </h2>
+
             <div className="grid md:grid-cols-4 gap-8">
-              <div className="text-center">
-                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-8 w-8 text-primary"/>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Búsqueda Simplificada</h3>
-                <p className="text-muted-foreground">
-                  Encuentra y compara cientos de paquetes turísticos en un solo lugar
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Star className="h-8 w-8 text-primary"/>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Agencias Verificadas</h3>
-                <p className="text-muted-foreground">
-                  Todas las agencias son verificadas para garantizar la mejor experiencia
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Heart className="h-8 w-8 text-primary"/>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Mejores Precios</h3>
-                <p className="text-muted-foreground">
-                  Accede a ofertas exclusivas y los mejores precios del mercado
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MessageSquare className="h-8 w-8 text-primary"/>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Reseñas Verificadas</h3>
-                <p className="text-muted-foreground">
-                  Lee opiniones reales de viajeros que han disfrutado la experiencia
-                </p>
-              </div>
+              {[
+                {
+                  icon: Search,
+                  title: "Búsqueda Simplificada",
+                  desc: "Encuentra y compara cientos de paquetes turísticos en un solo lugar."
+                },
+                {
+                  icon: Star,
+                  title: "Agencias Verificadas",
+                  desc: "Todas las agencias son verificadas para garantizar la mejor experiencia."
+                },
+                {
+                  icon: Heart,
+                  title: "Mejores Precios",
+                  desc: "Accede a ofertas exclusivas y los mejores precios del mercado."
+                },
+                {
+                  icon: MessageSquare,
+                  title: "Reseñas Verificadas",
+                  desc: "Lee opiniones reales de viajeros que han disfrutado la experiencia."
+                }
+              ].map((item, index) => (
+                  <div key={index}
+                       className="p-6 bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-2">
+                    <div
+                        className="flex items-center justify-center w-20 h-20 mx-auto mb-4 bg-primary/10 rounded-full shadow-lg transition-transform duration-300 hover:scale-105">
+                      <item.icon className="h-10 w-10 text-primary"/>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                    <p className="text-gray-600 leading-relaxed">{item.desc}</p>
+                  </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Featured Packages */}
-        <section className="py-20 flex items-center justify-center w-full">
+        <section className="py-20 flex items-center justify-center w-full bg-gray-50">
           <div className="container">
+            {/* Título y enlace */}
             <div className="flex items-center justify-between mb-12">
-              <h2 className="text-3xl font-bold">Paquetes Destacados</h2>
-              <Link href="/explorar" className="text-primary hover:underline inline-flex items-center">
-                Ver todos los paquetes
-                <ArrowRight className="ml-2 h-4 w-4"/>
+              <h2 className="text-3xl font-bold text-gray-900">🌟 Paquetes Destacados</h2>
+              <Link href="/explorar" className="text-primary hover:underline inline-flex items-center font-medium">
+                Ver todos los paquetes <ArrowRight className="ml-2 h-4 w-4"/>
               </Link>
             </div>
 
+            {/* Cargando */}
             {loading ? (
                 <div className="flex justify-center items-center h-64">
-                  <p>Cargando paquetes destacados...</p>
+                  <p className="text-gray-500 text-lg">Cargando paquetes destacados...</p>
                 </div>
             ) : (
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-3 gap-8">
+                  {/* Si hay paquetes destacados */}
                   {featuredPackages.length > 0 ? (
                       featuredPackages.map((pkg) => (
-                          <Link key={pkg._id} href={`/paquetes/${pkg._id}`} className="group">
-                            <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-4">
-                              <Image
-                                  src={pkg.images[0]?.url || "https://via.placeholder.com/800x600?text=No+Image"}
-                                  alt={pkg.title}
-                                  fill
-                                  className="object-cover transition-transform group-hover:scale-105"
-                              />
-                              <div className="absolute bottom-3 left-3 flex gap-2">
-                                {pkg.category && pkg.category.slice(0, 2).map((tag) => (
-                                    <span key={tag} className="px-2 py-1 rounded-full text-xs font-medium bg-white/90">
-                            {tag}
-                          </span>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <h3 className="font-semibold text-xl">{pkg.title}</h3>
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>
-                                  <span>{pkg.rating || 4.5}</span>
+                          <Link key={pkg._id} href={`/paquetes/${pkg._id}`} className="group block">
+                            <div
+                                className="relative rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-white">
+                              {/* Imagen */}
+                              <div className="relative aspect-[4/3] overflow-hidden">
+                                <Image
+                                    src={pkg.images[0]?.url || "https://via.placeholder.com/800x600?text=No+Image"}
+                                    alt={pkg.title}
+                                    fill
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                {/* Categorías */}
+                                <div className="absolute bottom-3 left-3 flex gap-2">
+                                  {pkg.category?.slice(0, 2).map((tag) => (
+                                      <span key={tag}
+                                            className="px-3 py-1 text-xs font-medium bg-white/90 rounded-full shadow">
+                        {tag}
+                      </span>
+                                  ))}
                                 </div>
                               </div>
-                              <p className="text-muted-foreground">{pkg.destination}</p>
-                              <p className="font-medium">{pkg.description.substring(0, 60)}...</p>
-                              <p className="text-sm text-muted-foreground">
-                                {pkg.duration.days} días / {pkg.duration.nights} noches
-                              </p>
-                              <p className="font-semibold text-lg">
-                                USD ${pkg.price.toLocaleString()}
-                              </p>
+
+                              {/* Información */}
+                              <div className="p-5 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <h3 className="font-semibold text-lg text-gray-900">{pkg.title}</h3>
+                                  <div className="flex items-center gap-1 text-yellow-500">
+                                    <Star className="h-4 w-4 fill-current"/>
+                                    <span className="text-sm font-medium">{pkg.rating || "4.5"}</span>
+                                  </div>
+                                </div>
+                                <p className="text-gray-600 text-sm">{pkg.destination}</p>
+                                <p className="text-gray-700 text-sm">{pkg.description.substring(0, 60)}...</p>
+                                <p className="text-sm text-gray-500">
+                                  {pkg.duration.days} días / {pkg.duration.nights} noches
+                                </p>
+                                <p className="text-primary font-semibold text-lg">
+                                  USD ${pkg.price.toLocaleString()}
+                                </p>
+                              </div>
                             </div>
                           </Link>
                       ))
                   ) : (
                       <div className="col-span-3 text-center py-12">
-                        <p className="text-muted-foreground">No se encontraron paquetes destacados</p>
+                        <p className="text-gray-500 text-lg">No se encontraron paquetes destacados</p>
                       </div>
                   )}
                 </div>

@@ -1,48 +1,72 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const AgencySchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Por favor ingrese el nombre de la agencia'],
+    required: [true, 'Por favor ingrese un nombre'],
+    trim: true,
   },
   email: {
     type: String,
     required: [true, 'Por favor ingrese un email'],
     unique: true,
+    trim: true,
+    lowercase: true,
     match: [/^\S+@\S+\.\S+$/, 'Por favor ingrese un email válido'],
   },
   password: {
     type: String,
     required: [true, 'Por favor ingrese una contraseña'],
-    minlength: 6,
+    minlength: [6, 'La contraseña debe tener al menos 6 caracteres'],
     select: false,
-  },
-  logo: {
-    type: String,
-    required: [true, 'Por favor suba un logo'],
   },
   description: {
     type: String,
-    required: [true, 'Por favor ingrese una descripción'],
-    maxlength: [500, 'La descripción no puede tener más de 500 caracteres'],
+    default: '',
   },
   location: {
     type: String,
-    required: [true, 'Por favor ingrese una localización'],
+    default: '',
   },
   phone: {
     type: String,
-    required: [true, 'Por favor ingrese un teléfono'],
+    default: '',
   },
-  website: String,
+  website: {
+    type: String,
+    default: '',
+  },
+  logo: {
+    type: String,
+    default: '',
+  },
   socialMedia: {
-    facebook: String,
-    instagram: String,
-    twitter: String,
+    facebook: { type: String, default: '' },
+    instagram: { type: String, default: '' },
+    twitter: { type: String, default: '' },
   },
   verified: {
     type: Boolean,
     default: false,
+  },
+  rating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5,
+  },
+  reviews: {
+    type: Number,
+    default: 0,
+  },
+  resetToken: {
+    type: String,
+    default: null
+  },
+  resetTokenExpiry: {
+    type: Date,
+    default: null
   },
   createdAt: {
     type: Date,

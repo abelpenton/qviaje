@@ -14,12 +14,6 @@ const UserSchema = new mongoose.Schema({
         lowercase: true,
         match: [/^\S+@\S+\.\S+$/, 'Por favor ingrese un email válido'],
     },
-    password: {
-        type: String,
-        required: [true, 'Por favor ingrese una contraseña'],
-        minlength: 6,
-        select: false,
-    },
     phone: {
         type: String,
         required: [true, 'Por favor ingrese un teléfono'],
@@ -29,9 +23,13 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Por favor suba una foto'],
     },
-    verified: {
-        type: Boolean,
-        default: false,
+    resetToken: {
+        type: String,
+        default: null
+    },
+    resetTokenExpiry: {
+        type: Date,
+        default: null
     },
     createdAt: {
         type: Date,

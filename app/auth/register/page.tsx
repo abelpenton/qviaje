@@ -186,22 +186,26 @@ export default function RegisterPage() {
               control={form.control}
               name="phone"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Teléfono</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                  <FormItem>
+                      <FormLabel>Teléfono</FormLabel>
+                      <FormControl>
+                          <Input {...field} />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground mt-2">
+                          Este número será utilizado para que los clientes te contacten por WhatsApp.
+                          Asegúrate de incluir el código de tu país (Ejemplo: +598 para Uruguay, +55 para Brasil).
+                      </p>
+                      <FormMessage/>
+                  </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sitio web (opcional)</FormLabel>
+              <FormField
+                  control={form.control}
+                  name="website"
+                  render={({field}) => (
+                      <FormItem>
+                          <FormLabel>Sitio web (opcional)</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>

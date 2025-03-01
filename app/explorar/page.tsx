@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,17 +13,24 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { format, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Search, MapPin, Calendar as CalendarIcon, Users, Star, Filter, X, Building2 } from "lucide-react";
+import { Search, MapPin, Calendar as CalendarIcon, Users, Star, Filter, X, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import toast from 'react-hot-toast'
+import { toast } from "sonner";
 
 export default function ExplorePage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [agencyInfo, setAgencyInfo] = useState(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPackages, setTotalPackages] = useState(0);
+  const packagesPerPage = 9; // Number of packages to display per page
 
   // Filter states
   const [destination, setDestination] = useState(searchParams.get('destination') || '');
@@ -88,8 +95,12 @@ export default function ExplorePage() {
       fetchAgencyInfo(searchParams.get('agencyId'));
     }
 
+    // Get page from URL or default to 1
+    const page = parseInt(searchParams.get('page') || '1');
+    setCurrentPage(page);
+
     // Fetch packages with initial filters
-    fetchPackages();
+    fetchPackages(page);
   }, [searchParams]);
 
   const fetchAgencyInfo = async (id) => {
@@ -105,7 +116,7 @@ export default function ExplorePage() {
     }
   };
 
-  const fetchPackages = async () => {
+  const fetchPackages = async (page = 1) => {
     try {
       setLoading(true);
 
@@ -154,20 +165,27 @@ export default function ExplorePage() {
       // Only include listed packages
       params.append('status', 'Listado');
 
-      const response = await fetch(`/api/packages?status=Listado&${params.toString()}`);
+      // Add pagination parameters
+      params.append('page', page.toString());
+      params.append('limit', packagesPerPage.toString());
+
+      const response = await fetch(`/api/packages/paginated?${params.toString()}`);
 
       if (!response.ok) {
-        toast.error('Error al cargar paquetes');
+        throw new Error('Error al cargar paquetes');
       }
 
-      let data = await response.json();
+      const data = await response.json();
 
       // Apply client-side sorting
-      data = sortPackages(data, sortOption);
+      let sortedPackages = sortPackages(data.packages, sortOption);
 
-      setPackages(data);
+      setPackages(sortedPackages);
+      setTotalPages(data.totalPages);
+      setTotalPackages(data.total);
     } catch (error) {
       console.error('Error fetching packages:', error);
+      toast.error('Error al cargar paquetes. Por favor intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -235,6 +253,7 @@ export default function ExplorePage() {
     setAgencyId('');
     setAgencyInfo(null);
     setActiveFilters([]);
+    setCurrentPage(1);
   };
 
   const handleApplyFilters = () => {
@@ -269,7 +288,9 @@ export default function ExplorePage() {
       removeActiveFilter('duration');
     }
 
-    fetchPackages();
+    // Reset to first page when applying new filters
+    setCurrentPage(1);
+    fetchPackages(1);
     setMobileFiltersOpen(false);
   };
 
@@ -277,6 +298,93 @@ export default function ExplorePage() {
     const option = e.target.value;
     setSortOption(option);
     setPackages(sortPackages([...packages], option));
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+
+    setCurrentPage(newPage);
+    fetchPackages(newPage);
+
+    // Update URL with page parameter
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+
+    // Scroll to top of results
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
+    // Update URL without refreshing the page
+    router.push(`/explorar?${params.toString()}`, { scroll: false });
+  };
+
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    const items = [];
+    const maxPagesToShow = 5; // Maximum number of page buttons to show
+
+    // Always show first page
+    items.push(
+        <Button
+            key="first"
+            variant={currentPage === 1 ? "default" : "outline"}
+            size="icon"
+            onClick={() => handlePageChange(1)}
+            disabled={currentPage === 1}
+            className="h-8 w-8"
+        >
+          1
+        </Button>
+    );
+
+    // Calculate range of pages to show
+    let startPage = Math.max(2, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxPagesToShow - 3);
+
+    // Adjust if we're near the beginning
+    if (startPage > 2) {
+      items.push(<span key="ellipsis1" className="px-2">...</span>);
+    }
+
+    // Add middle pages
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+          <Button
+              key={i}
+              variant={currentPage === i ? "default" : "outline"}
+              size="icon"
+              onClick={() => handlePageChange(i)}
+              className="h-8 w-8"
+          >
+            {i}
+          </Button>
+      );
+    }
+
+    // Add ellipsis if needed
+    if (endPage < totalPages - 1) {
+      items.push(<span key="ellipsis2" className="px-2">...</span>);
+    }
+
+    // Always show last page if there is more than one page
+    if (totalPages > 1) {
+      items.push(
+          <Button
+              key="last"
+              variant={currentPage === totalPages ? "default" : "outline"}
+              size="icon"
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8"
+          >
+            {totalPages}
+          </Button>
+      );
+    }
+
+    return items;
   };
 
   return (
@@ -338,7 +446,8 @@ export default function ExplorePage() {
                               setSelectedCategories(prev => prev.filter(c => c !== filter.value));
                             }
                             removeActiveFilter(filter.type, filter.value);
-                            fetchPackages();
+                            setCurrentPage(1);
+                            fetchPackages(1);
                           }}
                           className="ml-1 hover:bg-gray-200 rounded-full"
                       >
@@ -351,7 +460,8 @@ export default function ExplorePage() {
                     size="sm"
                     onClick={() => {
                       clearAllFilters();
-                      fetchPackages();
+                      setCurrentPage(1);
+                      fetchPackages(1);
                     }}
                     className="text-xs"
                 >
@@ -524,7 +634,8 @@ export default function ExplorePage() {
                   </Button>
                   <Button variant="outline" onClick={() => {
                     clearAllFilters();
-                    fetchPackages();
+                    setCurrentPage(1);
+                    fetchPackages(1);
                   }}>
                     Limpiar Filtros
                   </Button>
@@ -537,13 +648,13 @@ export default function ExplorePage() {
           <div className="md:col-span-3">
             {loading ? (
                 <div className="flex justify-center items-center h-64">
-                  <p>Cargando paquetes...</p>
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
                 </div>
             ) : (
                 <>
                   <div className="flex justify-between items-center mb-6">
                     <p className="text-muted-foreground">
-                      {packages.length} paquetes encontrados
+                      {totalPackages} paquetes encontrados
                     </p>
                     <div className="flex items-center space-x-2">
                       <label className="text-sm">Ordenar por:</label>
@@ -561,62 +672,92 @@ export default function ExplorePage() {
                   </div>
 
                   {packages.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {packages.map((pkg) => (
-                            <Link key={pkg._id} href={`/paquetes/${pkg._id}`} className="group">
-                              <Card className="overflow-hidden h-full">
-                                <div className="relative aspect-[4/3]">
-                                  <Image
-                                      src={pkg.images[0]?.url || "https://via.placeholder.com/800x600?text=No+Image"}
-                                      alt={pkg.title}
-                                      fill
-                                      className="object-cover transition-transform group-hover:scale-105"
-                                  />
-                                  <div className="absolute bottom-3 left-3 flex gap-2">
-                                    {pkg.category && pkg.category.slice(0, 2).map((tag) => (
-                                        <span key={tag} className="px-2 py-1 rounded-full text-xs font-medium bg-white/90">
-                                {tag}
-                              </span>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="p-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-semibold text-lg">{pkg.title}</h3>
-                                    <div className="flex items-center gap-1">
-                                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>
-                                      <span>{pkg.rating || 4.5}</span>
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {packages.map((pkg) => (
+                              <Link key={pkg._id} href={`/paquetes/${pkg._id}`} className="group">
+                                <Card className="overflow-hidden h-full hover:shadow-md transition-shadow duration-200">
+                                  <div className="relative aspect-[4/3]">
+                                    <Image
+                                        src={pkg.images[0]?.url || "https://via.placeholder.com/800x600?text=No+Image"}
+                                        alt={pkg.title}
+                                        fill
+                                        className="object-cover transition-transform group-hover:scale-105 duration-300"
+                                    />
+                                    <div className="absolute bottom-3 left-3 flex gap-2">
+                                      {pkg.category && pkg.category.slice(0, 2).map((tag) => (
+                                          <span key={tag} className="px-2 py-1 rounded-full text-xs font-medium bg-white/90">
+                                  {tag}
+                                </span>
+                                      ))}
                                     </div>
                                   </div>
-                                  <p className="text-sm text-muted-foreground mb-2">{pkg.description.substring(0, 60)}...</p>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                    <MapPin className="h-4 w-4"/>
-                                    <span>{pkg.destination}</span>
+                                  <div className="p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h3 className="font-semibold text-lg line-clamp-1">{pkg.title}</h3>
+                                      <div className="flex items-center gap-1">
+                                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>
+                                        <span>{pkg.rating || 4.5}</span>
+                                      </div>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{pkg.description.substring(0, 60)}...</p>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                                      <MapPin className="h-4 w-4"/>
+                                      <span className="line-clamp-1">{pkg.destination}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                                      <CalendarIcon className="h-4 w-4"/>
+                                      <span>{pkg.duration.days} días / {pkg.duration.nights} noches</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <p className="font-semibold text-lg text-primary">
+                                        USD ${pkg.price.toLocaleString()}
+                                      </p>
+                                      <span className="text-sm text-muted-foreground">
+                                {pkg.minPeople}-{pkg.maxPeople} personas
+                              </span>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                    <CalendarIcon className="h-4 w-4"/>
-                                    <span>{pkg.duration.days} días / {pkg.duration.nights} noches</span>
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <p className="font-semibold text-lg">
-                                      USD ${pkg.price.toLocaleString()}
-                                    </p>
-                                    <span className="text-sm text-muted-foreground">
-                              {pkg.minPeople}-{pkg.maxPeople} personas
-                            </span>
-                                  </div>
-                                </div>
-                              </Card>
-                            </Link>
-                        ))}
-                      </div>
+                                </Card>
+                              </Link>
+                          ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center mt-10 space-x-2">
+                              <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handlePageChange(currentPage - 1)}
+                                  disabled={currentPage === 1}
+                                  className="h-8 w-8"
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </Button>
+
+                              {generatePaginationItems()}
+
+                              <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handlePageChange(currentPage + 1)}
+                                  disabled={currentPage === totalPages}
+                                  className="h-8 w-8"
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                            </div>
+                        )}
+                      </>
                   ) : (
                       <div className="text-center py-12 bg-gray-50 rounded-lg">
                         <p className="text-lg font-medium mb-2">No se encontraron paquetes</p>
                         <p className="text-muted-foreground mb-4">Intenta con otros filtros o destinos</p>
                         <Button onClick={() => {
                           clearAllFilters();
-                          fetchPackages();
+                          setCurrentPage(1);
+                          fetchPackages(1);
                         }}>Limpiar Filtros</Button>
                       </div>
                   )}

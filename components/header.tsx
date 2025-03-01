@@ -1,3 +1,4 @@
+//@ts-nocheck
 "use client";
 
 import {useRef, useState} from 'react'
@@ -7,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Menu, X, Plane } from "lucide-react";
 import {useRouter} from 'next/navigation'
+import favicon from "/public/favicon.ico";
+import Image from "next/image";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

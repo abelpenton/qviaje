@@ -517,7 +517,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                 <div className="flex gap-2">
                                     <Button className="flex-1" onClick={generateWhatsAppLink}>
                                         <Phone className="h-4 w-4 mr-2"/>
-                                        Consultar
+                                        Consultar por WhatsApp
                                     </Button>
                                     <FavoriteButton packageId={packageData.id} />
                                 </div>
