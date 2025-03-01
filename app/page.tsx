@@ -17,6 +17,7 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import "swiper/css";
 import "swiper/css/effect-fade";
+import toast from 'react-hot-toast'
 
 export default function Home() {
   const [featuredPackages, setFeaturedPackages] = useState([]);
@@ -36,7 +37,7 @@ export default function Home() {
         const response = await fetch('/api/packages?featured=true&limit=5&status=Listado');
 
         if (!response.ok) {
-          throw new Error('Error al cargar paquetes destacados');
+          toast.error('Error al cargar paquetes destacados');
         }
 
         const data = await response.json();

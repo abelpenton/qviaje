@@ -2,12 +2,12 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
-import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { getServerSession } from 'next-auth';
 import {authOptions} from '@/lib/auth'
 import SessionProviderWrapper from '@/components/SessionProviderWrapper'
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -37,7 +37,7 @@ export default async function RootLayout({
             <main>{children}</main>
           </SessionProviderWrapper>
           <Footer />
-          <Toaster />
+          <Toaster position={'top-right'}/>
         </ThemeProvider>
       </body>
     </html>

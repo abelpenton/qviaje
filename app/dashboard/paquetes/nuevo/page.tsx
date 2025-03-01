@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -41,7 +41,7 @@ const formSchema = z.object({
     maxPeople: z.string(),
     minPeople: z.string(),
     images: z.any().refine((files) => files?.length > 0, 'Por favor suba al menos una imagen')
-        .refine((files) => Array.from(files).every(file => file.type.startsWith('image/')), 'Solo se permiten imágenes'),
+        .refine((files) => Array.from(files || []).every(file => file.type.startsWith('image/')), 'Solo se permiten imágenes'),
     category: z.array(z.string()).optional(),
 });
 
@@ -241,7 +241,7 @@ export default function NewPackagePage() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al crear el paquete');
+                toast.error(errorData.error || 'Error al crear el paquete');
             }
 
             toast.success('Paquete creado exitosamente');

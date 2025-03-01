@@ -1,38 +1,29 @@
 //@ts-nocheck
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Search, MapPin, Star, Globe, Phone, Mail, ChevronRight, CheckCircle } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Skeleton } from "@/components/ui/skeleton";
+import {useEffect, useMemo, useState} from 'react'
+import {Button} from '@/components/ui/button'
+import {Card} from '@/components/ui/card'
+import {CheckCircle, ChevronRight, Globe, Mail, MapPin, Phone, Search, Star} from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import {Skeleton} from '@/components/ui/skeleton'
+import toast from 'react-hot-toast'
 
 export default function AgenciasPage() {
     const [agencies, setAgencies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedSpecialties, setSelectedSpecialties] = useState([]);
-    const [filtersOpen, setFiltersOpen] = useState(false);
-
-    const specialties = [
-        "Aventura", "Cultural", "Playa", "Trekking",
-        "Todo Incluido", "Lujo", "Naturaleza", "Familiar",
-        "Romántico", "Económico", "Montaña", "Ciudad"
-    ];
 
     useEffect(() => {
         const fetchAgencies = async () => {
             try {
                 setLoading(true);
                 // Fetch verified agencies
-                const response = await fetch('/api/agencies');
+                const response = await fetch('/api/agencies?verified=true');
 
                 if (!response.ok) {
-                    throw new Error('Error al cargar agencias');
+                    toast.error('Error al cargar agencias');
                 }
 
                 const data = await response.json();
@@ -48,34 +39,17 @@ export default function AgenciasPage() {
         fetchAgencies();
     }, []);
 
-    // Filtrar agencias
-    const filteredAgencies = agencies.filter(agency => {
-        const matchesSearch = !searchQuery ||
-            agency.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            agency.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const filteredAgencies = useMemo(() => {
+        if (!searchQuery) {
+            return agencies
+        }
 
-        const matchesSpecialty = selectedSpecialties.length === 0 ||
-            selectedSpecialties.some(specialty =>
-                agency.specialties?.includes(specialty) ||
-                agency.category?.includes(specialty)
-            );
-
-        return matchesSearch && matchesSpecialty;
-    });
-
-    const handleSpecialtyChange = (specialty) => {
-        setSelectedSpecialties(prev => {
-            if (prev.includes(specialty)) {
-                return prev.filter(s => s !== specialty);
-            } else {
-                return [...prev, specialty];
-            }
-        });
-    };
+        return agencies.filter(agency => agency.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                agency.location.toLowerCase().includes(searchQuery.toLowerCase()))
+    }, [searchQuery, agencies]);
 
     const clearFilters = () => {
         setSearchQuery("");
-        setSelectedSpecialties([]);
     };
 
     return (

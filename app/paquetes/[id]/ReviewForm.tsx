@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { Star } from 'lucide-react';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
@@ -97,7 +97,7 @@ export default function ReviewForm({ packageId, onReviewAdded }) {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al publicar la reseña');
+                toast.error(errorData.error || 'Error al publicar la reseña');
             }
 
             const newReview = await response.json();

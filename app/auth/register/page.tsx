@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 
 const formSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -69,7 +69,7 @@ export default function RegisterPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Error al registrar la agencia');
+        toast.error('Error al registrar la agencia');
       }
 
       toast.success('Registro exitoso');

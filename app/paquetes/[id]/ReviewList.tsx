@@ -19,7 +19,7 @@ export default function ReviewsList({ packageId, initialReviews = [], loading: i
                 const response = await fetch(`/api/reviews?packageId=${packageId}`);
 
                 if (!response.ok) {
-                    throw new Error('Error al cargar reseñas');
+                    toast.error('Error al cargar reseñas');
                 }
 
                 const data = await response.json();

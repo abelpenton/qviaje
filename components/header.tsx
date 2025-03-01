@@ -15,7 +15,13 @@ export default function Header() {
   const router = useRouter()
   const selectRef = useRef(null);
 
-  console.log(session)
+  const [query, setQuery] = useState("");
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && query.trim() !== "") {
+      router.push(`/explorar?destination=${encodeURIComponent(query)}`);
+    }
+  };
 
   return (
       <header className="border-b">
@@ -33,8 +39,11 @@ export default function Header() {
                     type="search"
                     placeholder="Buscar destinos..."
                     className="w-64 pl-10"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={handleKeyPress}
                 />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground"/>
               </div>
               <Link href="/explorar" className="text-foreground hover:text-primary">
                 Paquetes
@@ -48,10 +57,10 @@ export default function Header() {
                   <div className="flex items-center space-x-4">
                     <Button variant="outline" className="w-full" onClick={() => {
                       if (session.user.type === 'agency') {
-                        return router.push("/dashboard");
+                        return router.push('/dashboard')
                       }
 
-                      return router.push("/profile");
+                      return router.push('/profile')
                     }}>
                       Mi Perfil
                     </Button>
@@ -74,7 +83,7 @@ export default function Header() {
 
             {/* Mobile Menu Button */}
             <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X className="h-6 w-6"/> : <Menu className="h-6 w-6"/>}
             </button>
           </div>
 
@@ -86,6 +95,9 @@ export default function Header() {
                       type="search"
                       placeholder="Buscar destinos..."
                       className="w-full pl-10"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={handleKeyPress}
                   />
                   <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 </div>

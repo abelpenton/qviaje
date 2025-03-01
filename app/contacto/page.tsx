@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 
 const formSchema = z.object({

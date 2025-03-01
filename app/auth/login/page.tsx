@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 
 const formSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -44,6 +44,8 @@ export default function LoginPage() {
         password: values.password,
         redirect: false,
       });
+
+      console.log(result)
 
       if (result?.error) {
         toast.error('Email o contraseña incorrectos');

@@ -17,6 +17,7 @@ import { Search, MapPin, Calendar as CalendarIcon, Users, Star, Filter, X, Build
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import toast from 'react-hot-toast'
 
 export default function ExplorePage() {
   const searchParams = useSearchParams();
@@ -156,7 +157,7 @@ export default function ExplorePage() {
       const response = await fetch(`/api/packages?status=Listado&${params.toString()}`);
 
       if (!response.ok) {
-        throw new Error('Error al cargar paquetes');
+        toast.error('Error al cargar paquetes');
       }
 
       let data = await response.json();

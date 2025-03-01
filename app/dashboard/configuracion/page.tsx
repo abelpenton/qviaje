@@ -22,7 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useSession } from 'next-auth/react';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import {  CheckCircle,  AlertCircle,  Upload,  ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -83,7 +83,7 @@ export default function ConfiguracionPage() {
                 const response = await fetch(`/api/agencies/${session.user.id}`);
 
                 if (!response.ok) {
-                    throw new Error('No se pudo cargar la información de la agencia');
+                    toast.error('No se pudo cargar la información de la agencia');
                 }
 
                 const data = await response.json();
@@ -186,7 +186,7 @@ export default function ConfiguracionPage() {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.message || 'Error al actualizar la información');
+                toast.error(error.message || 'Error al actualizar la información');
             }
 
             const updatedAgency = await response.json();
@@ -232,7 +232,7 @@ export default function ConfiguracionPage() {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.message || 'Error al solicitar verificación');
+                toast.error(error.message || 'Error al solicitar verificación');
             }
 
             const updatedAgency = await response.json();

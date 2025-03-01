@@ -23,7 +23,7 @@ export default function DashboardLayout({
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
-    if (!session) {
+    if (!session || (session && session?.data?.user.type !== 'agency')) {
       router.push('/auth/login');
     }
   }, [session])

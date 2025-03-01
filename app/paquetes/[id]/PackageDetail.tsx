@@ -14,6 +14,7 @@ import FavoriteButton from './FavoriteButton';
 import {useSession} from 'next-auth/react'
 import ReviewsList from './ReviewList';
 import ReviewForm from './ReviewForm';
+import toast from 'react-hot-toast'
 
 export default function PackageDetail({ packageData, similarPackages = [] }) {
     const [selectedDate, setSelectedDate] = useState(
@@ -47,7 +48,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
             const response = await fetch(`/api/reviews?packageId=${packageData.id}`);
 
             if (!response.ok) {
-                throw new Error('Error al cargar reseñas');
+                toast.error('Error al cargar reseñas');
             }
 
             const data = await response.json();

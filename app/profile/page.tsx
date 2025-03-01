@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSession } from 'next-auth/react';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { Upload } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -62,7 +62,7 @@ export default function ProfilePage() {
                 const response = await fetch(`/api/users/${session.user.id}`);
 
                 if (!response.ok) {
-                    throw new Error('No se pudo cargar la información del usuario');
+                    toast.error('No se pudo cargar la información del usuario');
                 }
 
                 const data = await response.json();
@@ -127,7 +127,7 @@ export default function ProfilePage() {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.message || 'Error al actualizar la información');
+                toast.error(error.message || 'Error al actualizar la información');
             }
 
             const updatedUser = await response.json();

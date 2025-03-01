@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 export default function FavoriteButton({ packageId }) {
@@ -25,7 +25,7 @@ export default function FavoriteButton({ packageId }) {
                 const response = await fetch(`/api/users/${session.user.id}/favorites/${packageId}`);
 
                 if (!response.ok) {
-                    throw new Error('Error al verificar favoritos');
+                    toast.error('Error al verificar favoritos');
                 }
 
                 const favorites = await response.json();
@@ -61,7 +61,7 @@ export default function FavoriteButton({ packageId }) {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Error al eliminar de favoritos');
+                    toast.error('Error al eliminar de favoritos');
                 }
 
                 setIsFavorite(false);
@@ -77,7 +77,7 @@ export default function FavoriteButton({ packageId }) {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Error al agregar a favoritos');
+                    toast.error('Error al agregar a favoritos');
                 }
 
                 setIsFavorite(true);

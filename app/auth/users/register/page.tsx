@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 
 const formSchema = z.object({
     name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -58,7 +58,7 @@ export default function RegisterUserPage() {
             });
 
             if (!response.ok) {
-                throw new Error('Error al registrar el usuario');
+                toast.error('Error al registrar el usuario');
             }
 
             toast.success('Registro exitoso');

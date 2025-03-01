@@ -16,6 +16,7 @@ import {Plus, Pencil, Trash, Archive, Upload, Eye} from 'lucide-react'
 import Link from 'next/link';
 import {useRouter} from 'next/navigation'
 import {useSession} from 'next-auth/react'
+import toast from 'react-hot-toast'
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState([]);
@@ -59,6 +60,7 @@ export default function PackagesPage() {
       });
 
       if (response.ok) {
+        toast.success(`Paquete actualizado a ${newStatus}`);
         // Actualizar el estado local para reflejar el cambio
         // @ts-ignore
         setPackages(packages.map(pkg =>

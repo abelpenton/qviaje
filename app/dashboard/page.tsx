@@ -31,6 +31,7 @@ import {
   Legend,
 } from 'chart.js';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast'
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -69,7 +70,7 @@ export default function DashboardPage() {
         const response = await fetch(`/api/statistics?period=${period}`);
 
         if (!response.ok) {
-          throw new Error('Error al cargar estadísticas');
+          toast.error('Error al cargar estadísticas');
         }
 
         const data = await response.json();

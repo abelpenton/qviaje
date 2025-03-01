@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {  Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -92,7 +92,7 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
                 const response = await fetch(`/api/packages/${id}`);
 
                 if (!response.ok) {
-                    throw new Error('No se pudo cargar el paquete');
+                    toast.error('No se pudo cargar el paquete');
                 }
 
                 const packageData = await response.json();
@@ -317,7 +317,7 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al actualizar el paquete');
+                toast.error(errorData.error || 'Error al actualizar el paquete');
             }
 
             toast.success('Paquete actualizado exitosamente');

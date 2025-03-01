@@ -33,7 +33,7 @@ export default function MisPaquetesPage() {
                 const response = await fetch(`/api/users/${session.user.id}/favorites`);
 
                 if (!response.ok) {
-                    throw new Error('Error al cargar paquetes favoritos');
+                    toast.error('Error al cargar paquetes favoritos');
                 }
 
                 const data = await response.json();
@@ -58,7 +58,7 @@ export default function MisPaquetesPage() {
             });
 
             if (!response.ok) {
-                throw new Error('Error al eliminar de favoritos');
+                toast.error('Error al eliminar de favoritos');
             }
 
             // Actualizar la lista de favoritos
