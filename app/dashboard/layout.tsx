@@ -10,8 +10,8 @@ import {
   Package,
   Settings,
   ChevronRight,
-  Menu,
-} from 'lucide-react';
+  Menu, CreditCard
+} from 'lucide-react'
 
 export default function DashboardLayout({
   children,
@@ -48,6 +48,7 @@ export default function DashboardLayout({
       href: '/dashboard/paquetes',
       icon: Package,
     },
+    { name: "Suscripción", href: "/dashboard/suscripcion", icon: CreditCard },
     {
       name: 'Configuración',
       href: '/dashboard/configuracion',
