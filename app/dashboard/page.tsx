@@ -32,6 +32,7 @@ import {
 } from 'chart.js';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast'
+import useAgency from '@/hooks/useAgency'
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -60,6 +61,18 @@ export default function DashboardPage() {
   });
   const [period, setPeriod] = useState('week');
   const router = useRouter();
+  const [isFree, setIsFree] = useState(false);
+  const [isBasic, setIsBasic] =  useState(false)
+  const [isPremium, setIsPremium] = useState(false)
+  const {agency, loading: loadingAgency} = useAgency()
+
+  useEffect(() => {
+      if (agency) {
+          setIsFree(agency.subscriptionPlan === 'free')
+          setIsBasic(agency.subscriptionPlan === 'basic')
+          setIsPremium(agency.subscriptionPlan === 'premium')
+      }
+  }, [agency])
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -136,8 +149,12 @@ export default function DashboardPage() {
     },
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-64">Cargando estadísticas...</div>;
+  if (loading || loadingAgency) {
+    return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+    );
   }
 
   return (
@@ -156,12 +173,12 @@ export default function DashboardPage() {
             >
               Semana
             </Button>
-            <Button
+            {!isFree && <Button
                 variant={period === 'month' ? 'default' : 'outline'}
                 onClick={() => setPeriod('month')}
             >
               Mes
-            </Button>
+            </Button>}
           </div>
         </div>
 
@@ -182,24 +199,24 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          {!isFree && <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Vistas esta {period === 'week' ? 'semana' : 'mes'}
               </CardTitle>
-              <Eye className="h-4 w-4 text-muted-foreground" />
+              <Eye className="h-4 w-4 text-muted-foreground"/>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.weeklyViews}</div>
               <div className="flex items-center text-xs">
                 {stats.viewsChange > 0 ? (
                     <>
-                      <ArrowUpRight className="mr-1 h-4 w-4 text-green-500" />
+                      <ArrowUpRight className="mr-1 h-4 w-4 text-green-500"/>
                       <span className="text-green-500">{stats.viewsChange}% más</span>
                     </>
                 ) : stats.viewsChange < 0 ? (
                     <>
-                      <ArrowDownRight className="mr-1 h-4 w-4 text-red-500" />
+                      <ArrowDownRight className="mr-1 h-4 w-4 text-red-500"/>
                       <span className="text-red-500">{Math.abs(stats.viewsChange)}% menos</span>
                     </>
                 ) : (
@@ -210,26 +227,26 @@ export default function DashboardPage() {
               </span>
               </div>
             </CardContent>
-          </Card>
+          </Card>}
 
-          <Card>
+          {!isFree && <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Consultas esta {period === 'week' ? 'semana' : 'mes'}
               </CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <MessageSquare className="h-4 w-4 text-muted-foreground"/>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.weeklyInquiries}</div>
               <div className="flex items-center text-xs">
                 {stats.inquiriesChange > 0 ? (
                     <>
-                      <ArrowUpRight className="mr-1 h-4 w-4 text-green-500" />
+                      <ArrowUpRight className="mr-1 h-4 w-4 text-green-500"/>
                       <span className="text-green-500">{stats.inquiriesChange}% más</span>
                     </>
                 ) : stats.inquiriesChange < 0 ? (
                     <>
-                      <ArrowDownRight className="mr-1 h-4 w-4 text-red-500" />
+                      <ArrowDownRight className="mr-1 h-4 w-4 text-red-500"/>
                       <span className="text-red-500">{Math.abs(stats.inquiriesChange)}% menos</span>
                     </>
                 ) : (
@@ -240,7 +257,7 @@ export default function DashboardPage() {
               </span>
               </div>
             </CardContent>
-          </Card>
+          </Card>}
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -263,7 +280,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Gráficos */}
-        <div className="grid gap-4 md:grid-cols-2">
+        {isPremium && <div className="grid gap-4 md:grid-cols-2">
           <Card className="col-span-1">
             <CardHeader>
               <CardTitle>Actividad Diaria</CardTitle>
@@ -273,7 +290,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <Line data={lineChartData} options={chartOptions} />
+                <Line data={lineChartData} options={chartOptions}/>
               </div>
             </CardContent>
           </Card>
@@ -287,14 +304,14 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <Bar data={barChartData} options={chartOptions} />
+                <Bar data={barChartData} options={chartOptions}/>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div>}
 
-        {/* Tabla de paquetes más populares */}
-        <Card>
+
+        {isPremium && <Card>
           <CardHeader>
             <CardTitle>Detalle de Paquetes Populares</CardTitle>
             <CardDescription>
@@ -353,7 +370,17 @@ export default function DashboardPage() {
               </table>
             </div>
           </CardContent>
-        </Card>
+        </Card>}
+        {
+            agency?.subscriptionPlan !== 'premium' &&
+            <div
+                className="text-center bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mt-4">
+                      <span>Analisis mensual, graficos y mejores estadísticas disponibles en plan Premium. Actualiza tu plan en <a
+                          href="/dashboard/suscripcion"
+                          className="underline">Planes</a>.
+                      </span>
+            </div>
+        }
       </div>
   );
 }

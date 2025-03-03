@@ -8,9 +8,26 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X, AlertCircle, CheckCircle, Star, Package, Users, BarChart, Shield, MessageSquare, TrendingUp, Award, Zap } from "lucide-react";
+import {
+    Check,
+    X,
+    AlertCircle,
+    CheckCircle,
+    Star,
+    Package,
+    Users,
+    BarChart,
+    Shield,
+    MessageSquare,
+    TrendingUp,
+    Award,
+    Zap,
+    MessageCircle
+} from 'lucide-react'
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
+import useTelegramBot from '@/hooks/useTelegramBot'
+import useAgency from '@/hooks/useAgency'
 
 // Define subscription plan types
 type PlanFeature = {
@@ -39,39 +56,12 @@ type Plan = {
 };
 
 export default function SubscriptionPage() {
-    const { data: session } = useSession();
-    const [agency, setAgency] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { data: session } = useSession()
     const [processingPayment, setProcessingPayment] = useState(false);
     const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
-    const router = useRouter();
+    const {sendMessageToTelegram} = useTelegramBot()
+    const {agency, loading} = useAgency()
 
-    useEffect(() => {
-        const fetchAgencyData = async () => {
-            if (!session?.user?.id) return;
-
-            try {
-                setLoading(true);
-                const response = await fetch(`/api/agencies/${session.user.id}`);
-
-                if (!response.ok) {
-                    toast.error('No se pudo cargar la información de la agencia');
-                }
-
-                const data = await response.json();
-                setAgency(data);
-            } catch (error) {
-                console.error('Error al cargar datos:', error);
-                toast.error('Error al cargar los datos de la agencia');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchAgencyData();
-    }, [session]);
-
-    // Define the subscription plans
     const plans: Plan[] = [
         {
             id: "free",
@@ -126,8 +116,8 @@ export default function SubscriptionPage() {
                 { name: "Análisis de datos premium", included: true, description: "Estadísticas completas con informes personalizados" },
                 { name: "Verificación de empresa", included: true, description: "Insignia de verificación para aumentar la confianza" },
                 { name: "Prioridad tipo 3 en búsquedas", included: true, description: "Máxima visibilidad en los resultados de búsqueda", highlight: true },
-                { name: "Análisis de reseñas y mejora", included: true, description: "Análisis detallado de reseñas con recomendaciones", highlight: true },
                 { name: "Marketing digital en redes", included: true, description: "Promoción en nuestras redes sociales", highlight: true },
+                { name: "Análisis y manejo de reseñas (Proximamente)", included: true, description: "Análisis detallado de reseñas con recomendaciones", highlight: true },
             ],
             cta: agency?.subscriptionPlan === "premium" ? "Plan actual" : "Actualizar plan",
             paymentLinks: {
@@ -178,6 +168,15 @@ export default function SubscriptionPage() {
         return 17; // Approximately 2 months free
     };
 
+    const cancelWhatsApp = async () => {
+
+        let message = `Hola, quiera cancelar la subscripción de QViaje para mi agencia: ${agency.name}.`;
+
+        message += `\n\nGracias.`;
+
+        window.open(`https://wa.me/+59897222006?text=${encodeURIComponent(message)}`, '_blank');
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -199,36 +198,48 @@ export default function SubscriptionPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <CheckCircle className="h-5 w-5 text-green-500"/>
                         Tu Plan Actual
                     </CardTitle>
                     <CardDescription>
                         Resumen de tu suscripción actual
                     </CardDescription>
+                    {agency?.subscriptionPlan  != 'free' && <div
+                        className="flex items-start gap-2 text-sm text-gray-600 bg-white p-3 rounded-md shadow-sm border
+                         w-full mt-4">
+                        <MessageCircle className="h-5 w-5 text-primary flex-shrink-0"/>
+                        <p className="leading-tight">
+                            Si deseas cancelar la suscripción, envía un mensaje automático por
+                            <span className="font-medium text-primary"> WhatsApp </span> a nuestro equipo.
+                            La cancelación se procesará inmediatamente.
+                        </p>
+                    </div>}
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div
+                        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gray-100 p-6 rounded-lg shadow-sm">
                         <div>
-                            <h3 className="text-lg font-semibold">
-                                Plan {agency?.subscriptionPlan === "free" ? "Gratis" : agency?.subscriptionPlan === "basic" ? "Básico" : "Premium"}
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                Plan {agency?.subscriptionPlan === 'free' ? 'Gratis' : agency?.subscriptionPlan === 'basic' ? 'Básico' : 'Premium'}
                             </h3>
-                            {agency?.subscriptionPlan !== "free" && (
-                                <p className="text-sm text-muted-foreground">
-                                    Facturación {billingCycle === "monthly" ? "mensual" : "anual"} • Próximo pago: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                            {agency?.subscriptionPlan !== 'free' && (
+                                <p className="text-sm text-gray-600">
+                                    Facturación {billingCycle === 'monthly' ? 'mensual' : 'anual'} • Próximo pago:
+                                    <span
+                                        className="font-medium text-gray-800"> {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</span>
                                 </p>
                             )}
                         </div>
-                        <div className="flex items-center gap-2">
-                            {agency?.subscriptionPlan !== "free" && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleUpgrade("free")}
-                                    disabled={processingPayment}
-                                >
+
+                        {agency?.subscriptionPlan !== 'free' && (
+                            <div className="flex flex-col items-start md:items-end gap-3 w-full md:w-auto">
+                                <Button variant="destructive" onClick={cancelWhatsApp} disabled={processingPayment}
+                                        className="w-full md:w-auto">
                                     Cancelar suscripción
                                 </Button>
-                            )}
-                        </div>
+
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -238,7 +249,7 @@ export default function SubscriptionPage() {
                 <Tabs
                     defaultValue="monthly"
                     value={billingCycle}
-                    onValueChange={(value) => setBillingCycle(value as "monthly" | "annual")}
+                    onValueChange={(value) => setBillingCycle(value as 'monthly' | 'annual')}
                     className="w-[400px]"
                 >
                     <TabsList className="grid w-full grid-cols-2">
@@ -298,9 +309,14 @@ export default function SubscriptionPage() {
                                 variant={agency?.subscriptionPlan === plan.id ? "outline" : plan.popular ? "default" : "outline"}
                                 disabled={agency?.subscriptionPlan === plan.id || processingPayment}
                                 onClick={() => {
-                                    //handleUpgrade(plan.id)
                                     const links = plan.paymentLinks
                                     window.open(billingCycle === "monthly" ? links?.monthly : links?.annual, "_blank");
+                                    sendMessageToTelegram(`
+                                    Nuevo cliente: ${agency?.name},
+                                    Nombre: ${session?.user?.name},
+                                    Email: ${session?.user?.email},
+                                    Plan: ${plan.name},
+                                    `)
                                 }}
                             >
                                 {processingPayment && agency?.subscriptionPlan !== plan.id ? "Procesando..." : plan.cta}

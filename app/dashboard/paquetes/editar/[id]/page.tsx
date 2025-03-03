@@ -17,9 +17,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {  Trash2 } from 'lucide-react';
+import {   Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
@@ -27,6 +27,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DndContext, closestCenter } from "@dnd-kit/core";
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Modificamos el esquema para hacer las imágenes opcionales en la edición
 const formSchema = z.object({
@@ -35,8 +38,20 @@ const formSchema = z.object({
     destination: z.string().min(3, 'El destino debe tener al menos 3 caracteres'),
     price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido con hasta dos decimales')
         .min(1, 'Por favor ingrese un precio'),
-    duration: z.string().regex(/^\d+ días \/ \d+ noches$/, 'Formato inválido. Ejemplo: 5 días / 4 noches')
-        .min(1, 'Por favor ingrese la duración'),
+    discountPercentage: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Descuento debe ser un número válido con hasta dos decimales')
+        .optional(),
+    durationDays: z
+        .string()
+        .min(1, "Por favor ingrese los días de duración")
+        .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+            message: "Debe ser un número válido mayor a 0",
+        }),
+    durationNights: z
+        .string()
+        .min(1, "Por favor ingrese las noches de duración")
+        .refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+            message: "Debe ser un número válido mayor o igual a 0",
+        }),
     included: z.string().min(10, 'Por favor detalle qué incluye el paquete'),
     notIncluded: z.string().min(10, 'Por favor detalle qué no incluye el paquete'),
     maxPeople: z.string(),
@@ -48,6 +63,11 @@ const formSchema = z.object({
             'Solo se permiten imágenes'
         ),
     category: z.array(z.string()).optional(),
+}).refine((data) => {
+    return Number(data.durationNights)  === Number(data.durationDays) - 1
+}, {
+    message: "El numero de noches debe ser igual al numero de dias menos 1",
+    path: ["durationNights"], // Muestra el error en el campo correspondiente
 });
 
 export default function EditPackagePage({ params }: { params: { id: string } }) {
@@ -76,7 +96,9 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
             description: '',
             destination: '',
             price: '',
-            duration: '',
+            discountPercentage: '0',
+            durationDays: '',
+            durationNights: '',
             included: '',
             notIncluded: '',
             minPeople: '',
@@ -92,7 +114,7 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
                 const response = await fetch(`/api/packages/${id}`);
 
                 if (!response.ok) {
-                    toast.error('No se pudo cargar el paquete');
+                    throw new Error('No se pudo cargar el paquete');
                 }
 
                 const packageData = await response.json();
@@ -103,7 +125,9 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
                     description: packageData.description,
                     destination: packageData.destination,
                     price: packageData.price.toString(),
-                    duration: `${packageData.duration.days} días / ${packageData.duration.nights} noches`,
+                    discountPercentage: packageData.discountPercentage?.toString() || '0',
+                    durationDays: packageData.duration.days.toString(),
+                    durationNights: packageData.duration.nights.toString(),
                     included: packageData.included.join('\n'),
                     notIncluded: packageData.notIncluded.join('\n'),
                     minPeople: packageData.minPeople?.toString() || '1',
@@ -196,6 +220,21 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
         setDateOpen(false);
     };
 
+    const removeImage = (index) => {
+        setCurrentImages((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            setCurrentImages((items) => {
+                const oldIndex = items.findIndex((img) => img.id === active.id);
+                const newIndex = items.findIndex((img) => img.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
+
     const removeStartDate = (index) => {
         setStartDates(startDates.filter((_, i) => i !== index));
     };
@@ -286,6 +325,8 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
                     }
                 } else if (key === 'category') {
                     // Skip, we'll handle categories separately
+                } else if (key === 'durationDays' || key === 'durationNights') {
+                    // Skip, we'll handle duration separately
                 } else {
                     formData.append(key, value);
                 }
@@ -293,6 +334,12 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
 
             // Añadir el ID del paquete
             formData.append('id', id);
+
+            // Add duration
+            formData.append('duration', JSON.stringify({
+                days: parseInt(values.durationDays),
+                nights: parseInt(values.durationNights)
+            }));
 
             // Añadir las imágenes actuales (para mantenerlas si no se suben nuevas)
             formData.append('currentImages', JSON.stringify(currentImages));
@@ -317,7 +364,7 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
 
             if (!response.ok) {
                 const errorData = await response.json();
-                toast.error(errorData.error || 'Error al actualizar el paquete');
+                throw new Error(errorData.error || 'Error al actualizar el paquete');
             }
 
             toast.success('Paquete actualizado exitosamente');
@@ -336,7 +383,7 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
-            <div>
+            <div >
                 <h1 className="text-2xl font-bold tracking-tight">Editar Paquete Turístico</h1>
                 <p className="text-muted-foreground">
                     Actualiza la información de tu paquete turístico
@@ -346,17 +393,15 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
             {currentImages.length > 0 && (
                 <div>
                     <h3 className="text-lg font-medium mb-2">Imágenes actuales</h3>
-                    <div className="grid grid-cols-3 gap-4">
-                        {currentImages.map((image, index) => (
-                            <div key={index} className="relative">
-                                <img
-                                    src={image.url}
-                                    alt={image.alt || 'Imagen del paquete'}
-                                    className="w-full h-32 object-cover rounded-md"
-                                />
+                    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={currentImages} strategy={verticalListSortingStrategy}>
+                            <div className="grid grid-cols-3 gap-4">
+                                {currentImages.map((image, index) => (
+                                    <SortableImage key={image.id} image={image} index={index} removeImage={removeImage} />
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </SortableContext>
+                    </DndContext>
                 </div>
             )}
 
@@ -390,15 +435,29 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
                         )}
                     />
 
+                    <FormField
+                        control={form.control}
+                        name="destination"
+                        render={({field}) => (
+                            <FormItem>
+                                <FormLabel>Destino</FormLabel>
+                                <FormControl>
+                                    <Input {...field} />
+                                </FormControl>
+                                <FormMessage/>
+                            </FormItem>
+                        )}
+                    />
+
                     <div className="grid grid-cols-2 gap-4">
                         <FormField
                             control={form.control}
-                            name="destination"
+                            name="durationDays"
                             render={({field}) => (
                                 <FormItem>
-                                    <FormLabel>Destino</FormLabel>
+                                    <FormLabel>Días</FormLabel>
                                     <FormControl>
-                                        <Input {...field} />
+                                        <Input {...field} type="number" min="1" />
                                     </FormControl>
                                     <FormMessage/>
                                 </FormItem>
@@ -407,12 +466,12 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
 
                         <FormField
                             control={form.control}
-                            name="duration"
+                            name="durationNights"
                             render={({field}) => (
                                 <FormItem>
-                                    <FormLabel>Duración</FormLabel>
+                                    <FormLabel>Noches</FormLabel>
                                     <FormControl>
-                                        <Input {...field} placeholder="Ej: 5 días / 4 noches"/>
+                                        <Input {...field} type="number" min="0" />
                                     </FormControl>
                                     <FormMessage/>
                                 </FormItem>
@@ -450,19 +509,35 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
                         />
                     </div>
 
-                    <FormField
-                        control={form.control}
-                        name="price"
-                        render={({field}) => (
-                            <FormItem>
-                                <FormLabel>Precio base (USD)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" {...field} min="0" step="0.01" />
-                                </FormControl>
-                                <FormMessage/>
-                            </FormItem>
-                        )}
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="price"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormLabel>Precio base (USD)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" {...field} min="0" step="0.01" />
+                                    </FormControl>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="discountPercentage"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormLabel>Descuento (%)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" {...field} min="0" max="100" step="0.01" />
+                                    </FormControl>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
 
                     <FormField
                         control={form.control}
@@ -537,7 +612,7 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
                     {/* Sección de fechas de salida */}
                     <div className="space-y-4">
                         <div>
-                            <h3 className="text-lg font-medium">Fechas de salida</h3>
+                            <h3 className="text-lg font-medium mb-2">Fechas de salida</h3>
                             <p className="text-sm text-muted-foreground">
                                 Gestione las fechas disponibles para este paquete
                             </p>
@@ -799,3 +874,24 @@ export default function EditPackagePage({ params }: { params: { id: string } }) 
         </div>
     );
 }
+
+const SortableImage = ({ image, index, removeImage }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: image.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group">
+            <img src={image.url} alt={image.alt || "Imagen del paquete"} className="w-full h-32 object-cover rounded-md" />
+            <button
+                onClick={() => removeImage(index)}
+                className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+            >
+                <Trash2 className="w-4 h-4" />
+            </button>
+        </div>
+    );
+};

@@ -249,9 +249,12 @@ export default function ConfiguracionPage() {
     };
 
     if (loading) {
-        return <div className="flex justify-center items-center h-64">Cargando información...</div>;
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+        );
     }
-
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             <div>
@@ -623,13 +626,23 @@ export default function ConfiguracionPage() {
                                     <div className="mt-6">
                                         <Button
                                             onClick={handleVerification}
-                                            disabled={!verificationStatus.eligible || verifying}
+                                            disabled={!verificationStatus.eligible || verifying || agency?.subscriptionPlan === 'free'}
                                             className="w-full"
                                         >
                                             {verifying ? 'Procesando...' : 'Solicitar Verificación'}
                                         </Button>
+                                        {
+                                            agency?.subscriptionPlan === 'free' &&
+                                            <div
+                                                className="text-center bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mt-4">
+                                                <span>La verficacion de empresa esta solo disponible en los planes basico y premium. Actualiza tu plan en <a
+                                                    href="/dashboard/suscripcion"
+                                                    className="underline">Planes</a>.</span>
+                                            </div>
+                                        }
                                         <p className="text-xs text-center text-muted-foreground mt-2">
-                                            Al solicitar la verificación, aceptas que revisemos la información proporcionada.
+                                            Al solicitar la verificación, aceptas que revisemos la información
+                                            proporcionada.
                                         </p>
                                     </div>
                                 </>

@@ -17,7 +17,6 @@ export async function GET(request: Request) {
 
         // Filter parameters
         const agencyId = searchParams.get('agencyId');
-        const featured = searchParams.get('featured') === 'true';
         const destination = searchParams.get('destination');
         const category = searchParams.getAll('category');
         const minPrice = searchParams.get('minPrice');
@@ -59,7 +58,6 @@ export async function GET(request: Request) {
         // Filter by date if specified
         if (date) {
             const selectedDate = new Date(date);
-            // Find packages with start dates on or after the selected date
             query['startDates.date'] = { $gte: selectedDate };
         }
 
@@ -73,7 +71,6 @@ export async function GET(request: Request) {
         // Filter by travelers if specified
         if (travelers) {
             const travelersCount = parseInt(travelers);
-            query.minPeople = { $lte: travelersCount };
             query.maxPeople = { $gte: travelersCount };
         }
 
@@ -83,35 +80,60 @@ export async function GET(request: Request) {
         // Calculate total pages
         const totalPages = Math.ceil(total / limit);
 
-        // Get packages with pagination
-        const packages = await Package.find(query)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        // Get reviews for each package
-        const packagesWithReviews = await Promise.all(
-            packages.map(async (pkg) => {
-                // Get reviews count and average rating
-                const reviews = await Review.find({ packageId: pkg._id });
-                const reviewCount = reviews.length;
-                let averageRating = 0;
-
-                if (reviewCount > 0) {
-                    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-                    averageRating = parseFloat((totalRating / reviewCount).toFixed(1));
+        // Get packages with agency details and sorted by subscription priority & verification
+        const packages = await Package.aggregate([
+            { $match: query },
+            {
+                $lookup: {
+                    from: 'agencies',
+                    localField: 'agencyId',
+                    foreignField: '_id',
+                    as: 'agency'
                 }
-
-                return {
-                    ...pkg.toObject(),
-                    rating: averageRating,
-                    reviews: reviewCount
-                };
-            })
-        );
+            },
+            { $unwind: '$agency' },
+            {
+                $lookup: {
+                    from: 'reviews', // Assuming reviews collection is named 'reviews'
+                    localField: '_id', // Reference to the package _id
+                    foreignField: 'packageId', // Foreign field that references the package
+                    as: 'reviews'
+                }
+            },
+            {
+                $addFields: {
+                    reviewCount: { $size: '$reviews' }, // Count the number of reviews
+                    rating: {
+                        $avg: '$reviews.rating' // Calculate the average rating
+                    },
+                    subscriptionPriority: {
+                        $switch: {
+                            branches: [
+                                { case: { $eq: ['$agency.subscriptionPlan', 'premium'] }, then: 3 },
+                                { case: { $eq: ['$agency.subscriptionPlan', 'basic'] }, then: 2 },
+                                { case: { $eq: ['$agency.subscriptionPlan', 'free'] }, then: 1 }
+                            ],
+                            default: 0
+                        }
+                    },
+                    verifiedPriority: { $cond: { if: '$agency.verified', then: 1, else: 0 } }
+                }
+            },
+            {
+                $sort: {
+                    verifiedPriority: -1,
+                    subscriptionPriority: -1,
+                    rating: -1, // Sort by rating
+                    reviewCount: -1, // Sort by review count
+                    createdAt: -1
+                }
+            },
+            { $skip: skip },
+            { $limit: limit }
+        ]);
 
         return NextResponse.json({
-            packages: packagesWithReviews,
+            packages,
             page,
             limit,
             total,

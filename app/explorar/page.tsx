@@ -159,8 +159,7 @@ export default function ExplorePage() {
 
       // Add agencyId filter if present
       if (agencyId) {
-        params.append('agencyId', agencyId);
-      }
+        params.append('agencyId', agencyId); }
 
       // Only include listed packages
       params.append('status', 'Listado');
@@ -243,7 +242,7 @@ export default function ExplorePage() {
     });
   };
 
-  const clearAllFilters = () => {
+  const clearAllFilters = async () => {
     setDestination('');
     setPriceRange([0, 5000]);
     setSelectedCategories([]);
@@ -254,6 +253,7 @@ export default function ExplorePage() {
     setAgencyInfo(null);
     setActiveFilters([]);
     setCurrentPage(1);
+    await fetchPackages(1);
   };
 
   const handleApplyFilters = () => {
@@ -385,6 +385,12 @@ export default function ExplorePage() {
     }
 
     return items;
+  };
+
+  // Calculate discounted price
+  const getDiscountedPrice = (price, discountPercentage) => {
+    if (!discountPercentage) return price;
+    return price - (price * (discountPercentage / 100));
   };
 
   return (
@@ -691,15 +697,20 @@ export default function ExplorePage() {
                                 </span>
                                       ))}
                                     </div>
+                                    {pkg.discountPercentage > 0 && (
+                                        <div className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                          -{pkg.discountPercentage}%
+                                        </div>
+                                    )}
                                   </div>
                                   <div className="p-4">
-                                    <div className="flex items-center justify-between mb-2">
+                                    {pkg.rating && <div className="flex items-center justify-between mb-2">
                                       <h3 className="font-semibold text-lg line-clamp-1">{pkg.title}</h3>
                                       <div className="flex items-center gap-1">
                                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>
-                                        <span>{pkg.rating || 4.5}</span>
+                                        <span>{pkg.rating}</span>
                                       </div>
-                                    </div>
+                                    </div>}
                                     <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{pkg.description.substring(0, 60)}...</p>
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                                       <MapPin className="h-4 w-4"/>
@@ -710,9 +721,22 @@ export default function ExplorePage() {
                                       <span>{pkg.duration.days} días / {pkg.duration.nights} noches</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                      <p className="font-semibold text-lg text-primary">
-                                        USD ${pkg.price.toLocaleString()}
-                                      </p>
+                                      <div>
+                                        {pkg.discountPercentage > 0 ? (
+                                            <div>
+                                              <p className="line-through text-sm text-muted-foreground">
+                                                USD ${pkg.price.toLocaleString()}
+                                              </p>
+                                              <p className="font-semibold text-lg text-primary">
+                                                USD ${getDiscountedPrice(pkg.price, pkg.discountPercentage).toLocaleString()}
+                                              </p>
+                                            </div>
+                                        ) : (
+                                            <p className="font-semibold text-lg text-primary">
+                                              USD ${pkg.price.toLocaleString()}
+                                            </p>
+                                        )}
+                                      </div>
                                       <span className="text-sm text-muted-foreground">
                                 {pkg.minPeople}-{pkg.maxPeople} personas
                               </span>

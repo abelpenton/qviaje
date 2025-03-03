@@ -1,4 +1,3 @@
-
 //@ts-nocheck
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
@@ -113,7 +112,7 @@ export async function PUT(
     let newImages = [];
 
     // Subir nuevas imágenes a Cloudinary si existen
-    if (files && files.length > 0 && files[0] instanceof File) {
+    if (files && files.length > 0 && files[0]) {
       newImages = await Promise.all(
           files.map(async (file) => {
             const buffer = await file.arrayBuffer();
@@ -163,16 +162,25 @@ export async function PUT(
       }
     }
 
+    // Procesar la duración
+    let duration = { days: 1, nights: 0 };
+    const durationStr = formData.get('duration');
+    if (durationStr) {
+      try {
+        duration = JSON.parse(durationStr);
+      } catch (e) {
+        console.error('Error al parsear la duración:', e);
+      }
+    }
+
     // Preparar los datos para la actualización
     const updateData = {
       title: formData.get('title'),
       description: formData.get('description'),
       destination: formData.get('destination'),
       price: parseFloat(formData.get('price')),
-      duration: {
-        days: parseInt(formData.get('duration').split(' ')[0]),
-        nights: parseInt(formData.get('duration').split(' / ')[1])
-      },
+      discountPercentage: parseFloat(formData.get('discountPercentage') || 0),
+      duration: duration,
       included: formData.get('included').split('\n').map(item => item.trim()),
       notIncluded: formData.get('notIncluded').split('\n').map(item => item.trim()),
       minPeople: parseInt(formData.get('minPeople')),

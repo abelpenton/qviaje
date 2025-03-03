@@ -21,6 +21,12 @@ const PackageSchema = new mongoose.Schema({
     required: [true, 'Por favor ingrese un precio'],
     min: 0,
   },
+  discountPercentage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+  },
   duration: {
     days: {
       type: Number,

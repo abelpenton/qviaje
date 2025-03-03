@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import useTelegramBot from '@/hooks/useTelegramBot'
 
 const formSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -34,6 +35,7 @@ const formSchema = z.object({
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const {sendMessageToTelegram} = useTelegramBot()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -72,6 +74,7 @@ export default function RegisterPage() {
         toast.error('Error al registrar la agencia');
       }
 
+      await sendMessageToTelegram(`New agency registered: ${values.name}`)
       toast.success('Registro exitoso');
       router.push('/auth/login');
     } catch (error) {

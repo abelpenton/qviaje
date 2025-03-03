@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}&type=${recipientType}`;
 
         // Send email with Resend
-        const {data, error} = await resend.emails.send({
+        await resend.emails.send({
             from: 'QViaje <no-reply@qviaje.com>',
             to: email,
             subject: 'Recuperación de contraseña - QViaje',
@@ -83,9 +83,6 @@ export async function POST(request: Request) {
         </div>
       `,
         });
-
-        console.log(data);
-        console.log(error);
 
         return NextResponse.json({ success: true });
     } catch (error) {

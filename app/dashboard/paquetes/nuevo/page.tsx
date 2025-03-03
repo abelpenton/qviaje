@@ -1,7 +1,7 @@
 //@ts-nocheck
 "use client";
 
-import { useState } from 'react';
+import {useEffect, useState} from 'react'
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,8 +17,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {  Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
@@ -26,7 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
-import {Trash2} from 'lucide-react'
+import useAgency from '@/hooks/useAgency'
 
 const formSchema = z.object({
     title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
@@ -34,15 +35,30 @@ const formSchema = z.object({
     destination: z.string().min(3, 'El destino debe tener al menos 3 caracteres'),
     price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido con hasta dos decimales')
         .min(1, 'Por favor ingrese un precio'),
-    duration: z.string().regex(/^\d+ días \/ \d+ noches$/, 'Formato inválido. Ejemplo: 5 días / 4 noches')
-        .min(1, 'Por favor ingrese la duración'),
+    discountPercentage: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Descuento debe ser un número válido con hasta dos decimales')
+        .optional(),
+    durationDays: z
+        .string()
+        .min(1, "Por favor ingrese los días de duración")
+        .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+            message: "Debe ser un número válido mayor a 0",
+        }),
+    durationNights: z
+        .string()
+        .min(1, "Por favor ingrese las noches de duración")
+        .refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+            message: "Debe ser un número válido mayor o igual a 0",
+        }),
     included: z.string().min(10, 'Por favor detalle qué incluye el paquete'),
     notIncluded: z.string().min(10, 'Por favor detalle qué no incluye el paquete'),
     maxPeople: z.string(),
     minPeople: z.string(),
     images: z.any().refine((files) => files?.length > 0, 'Por favor suba al menos una imagen')
-        .refine((files) => Array.from(files || []).every(file => file.type.startsWith('image/')), 'Solo se permiten imágenes'),
+        .refine((files) => Array.from(files).every(file => file.type.startsWith('image/')), 'Solo se permiten imágenes'),
     category: z.array(z.string()).optional(),
+}).refine((data) => Number(data.durationNights) <= Number(data.durationDays), {
+    message: "El número de noches no puede ser mayor al número de días",
+    path: ["durationNights"], // Muestra el error en el campo correspondiente
 });
 
 export default function NewPackagePage() {
@@ -64,6 +80,40 @@ export default function NewPackagePage() {
         }
     ]);
     const [selectedCategories, setSelectedCategories] = useState([]);
+    const {agency,} = useAgency()
+    const [agencyPackage, setAgencyPackages] = useState([])
+
+    useEffect(() => {
+        if (agency && agencyPackage.length > 0) {
+            const allPackages = agencyPackage.length
+            const isFree = agency.subscriptionPlan === "free"
+            if (isFree && allPackages === 100) {
+                router.push("/dashboard/paquetes")
+            }
+        }
+    }, [agency, agencyPackage])
+
+    useEffect(() => {
+        const fetchPackages = async () => {
+            try {
+                const response = await fetch('/api/packages?agencyId=' + agency?._id);
+                const data = await response.json();
+
+                if (response.ok) {
+                    setAgencyPackages(data);
+                } else {
+                    console.error('Error al obtener los paquetes:', data.error);
+                }
+            } catch (error) {
+                console.error('Error de red:', error);
+            }
+        };
+
+        if (agency) {
+            fetchPackages();
+        }
+    }, [agency]);
+
 
     const categories = [
         'Playa', 'Montaña', 'Ciudad', 'Aventura', 'Relax',
@@ -77,7 +127,9 @@ export default function NewPackagePage() {
             description: '',
             destination: '',
             price: '',
-            duration: '',
+            discountPercentage: '0',
+            durationDays: '',
+            durationNights: '',
             included: '',
             notIncluded: '',
             minPeople: '1',
@@ -216,10 +268,18 @@ export default function NewPackagePage() {
                     Array.from(value).forEach((file) => formData.append('images', file));
                 } else if (key === 'category') {
                     // Skip, we'll handle categories separately
+                } else if (key === 'durationDays' || key === 'durationNights') {
+                    // Skip, we'll handle duration separately
                 } else {
                     formData.append(key, value);
                 }
             });
+
+            // Add duration
+            formData.append('duration', JSON.stringify({
+                days: parseInt(values.durationDays),
+                nights: parseInt(values.durationNights)
+            }));
 
             // Añadir las categorías seleccionadas
             formData.append('category', JSON.stringify(selectedCategories));
@@ -241,7 +301,7 @@ export default function NewPackagePage() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                toast.error(errorData.error || 'Error al crear el paquete');
+                throw new Error(errorData.error || 'Error al crear el paquete');
             }
 
             toast.success('Paquete creado exitosamente');
@@ -293,15 +353,29 @@ export default function NewPackagePage() {
                         )}
                     />
 
+                    <FormField
+                        control={form.control}
+                        name="destination"
+                        render={({field}) => (
+                            <FormItem>
+                                <FormLabel>Destino</FormLabel>
+                                <FormControl>
+                                    <Input {...field} />
+                                </FormControl>
+                                <FormMessage/>
+                            </FormItem>
+                        )}
+                    />
+
                     <div className="grid grid-cols-2 gap-4">
                         <FormField
                             control={form.control}
-                            name="destination"
+                            name="durationDays"
                             render={({field}) => (
                                 <FormItem>
-                                    <FormLabel>Destino</FormLabel>
+                                    <FormLabel>Días</FormLabel>
                                     <FormControl>
-                                        <Input {...field} />
+                                        <Input {...field} type="number" min="1" />
                                     </FormControl>
                                     <FormMessage/>
                                 </FormItem>
@@ -310,12 +384,12 @@ export default function NewPackagePage() {
 
                         <FormField
                             control={form.control}
-                            name="duration"
+                            name="durationNights"
                             render={({field}) => (
                                 <FormItem>
-                                    <FormLabel>Duración</FormLabel>
+                                    <FormLabel>Noches</FormLabel>
                                     <FormControl>
-                                        <Input {...field} placeholder="Ej: 5 días / 4 noches"/>
+                                        <Input {...field} type="number" min="0" />
                                     </FormControl>
                                     <FormMessage/>
                                 </FormItem>
@@ -353,19 +427,35 @@ export default function NewPackagePage() {
                         />
                     </div>
 
-                    <FormField
-                        control={form.control}
-                        name="price"
-                        render={({field}) => (
-                            <FormItem>
-                                <FormLabel>Precio base (USD)</FormLabel>
-                                <FormControl>
-                                    <Input type="number" {...field} min="0" step="0.01" />
-                                </FormControl>
-                                <FormMessage/>
-                            </FormItem>
-                        )}
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="price"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormLabel>Precio base (USD)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" {...field} min="0" step="0.01" />
+                                    </FormControl>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="discountPercentage"
+                            render={({field}) => (
+                                <FormItem>
+                                    <FormLabel>Descuento (%)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" {...field} min="0" max="100" step="0.01" />
+                                    </FormControl>
+                                    <FormMessage/>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
 
                     <FormField
                         control={form.control}

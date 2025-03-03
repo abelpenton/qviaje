@@ -1,6 +1,5 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
@@ -8,8 +7,6 @@ import { getServerSession } from 'next-auth';
 import {authOptions} from '@/lib/auth'
 import SessionProviderWrapper from '@/components/SessionProviderWrapper'
 import { Toaster } from 'react-hot-toast';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'QViaje - Paquetes Turísticos en toda Latinoamérica',
@@ -25,7 +22,7 @@ export default async function RootLayout({
 
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

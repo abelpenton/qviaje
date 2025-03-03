@@ -50,6 +50,7 @@ export const authOptions: NextAuthOptions = {
 
                 // For users, we'll need to implement password verification
                 // If your User model has a password field:
+
                 const isValidUser = await bcrypt.compare(credentials.password, user.password);
                 if (!isValidUser) {
                     throw new Error('Email o contraseña incorrectos');

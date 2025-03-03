@@ -1,4 +1,4 @@
-// @ts-nocheck
+//@ts-nocheck
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -11,15 +11,13 @@ import ItineraryPDF from '@/app/paquetes/[id]/PdfItinerary'
 import { pdf } from "@react-pdf/renderer";
 import Link from 'next/link';
 import FavoriteButton from './FavoriteButton';
-import {useSession} from 'next-auth/react'
 import ReviewsList from './ReviewList';
 import ReviewForm from './ReviewForm';
-import toast from 'react-hot-toast'
 
 export default function PackageDetail({ packageData, similarPackages = [] }) {
     const [selectedDate, setSelectedDate] = useState(
         packageData.startDates && packageData.startDates.length > 0
-            ? packageData.startDates[0]
+            ? packageData.startDates.sort((a, b) => new Date(a.date) - new Date(b.date))[0]
             : { date: new Date(), availableSpots: 0, price: packageData.price }
     );
     const [mainImage, setMainImage] = useState(
@@ -28,7 +26,6 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
             : ""
     );
     const [travelers, setTravelers] = useState(packageData.minPeople || 1);
-    const { data: session, status } = useSession();
 
     // Reviews state
     const [reviews, setReviews] = useState([]);
@@ -48,7 +45,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
             const response = await fetch(`/api/reviews?packageId=${packageData.id}`);
 
             if (!response.ok) {
-                toast.error('Error al cargar reseñas');
+                throw new Error('Error al cargar reseñas');
             }
 
             const data = await response.json();
@@ -143,9 +140,16 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
 
         // Add price information
         const pricePerPerson = selectedDate.price || packageData.price;
-        const totalPrice = pricePerPerson * travelers;
-        message += `.\n\nPrecio por persona: $${pricePerPerson} USD`;
-        message += `\nPrecio total: $${totalPrice} USD`;
+        const discountedPrice = packageData.discountPercentage > 0
+            ? pricePerPerson - (pricePerPerson * (packageData.discountPercentage / 100))
+            : pricePerPerson;
+        const totalPrice = discountedPrice * travelers;
+
+        message += `.\n\nPrecio por persona: $${discountedPrice.toFixed(2)} USD`;
+        if (packageData.discountPercentage > 0) {
+            message += ` (con descuento del ${packageData.discountPercentage}%)`;
+        }
+        message += `\nPrecio total: $${totalPrice.toFixed(2)} USD`;
 
         // Add more package details
         message += `\n\nDestino: ${packageData.location || packageData.destination}`;
@@ -179,6 +183,10 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
     // Calculate total price
     const calculateTotalPrice = () => {
         const pricePerPerson = selectedDate.price || packageData.price;
+        if (packageData.discountPercentage > 0) {
+            const discountedPrice = pricePerPerson - (pricePerPerson * (packageData.discountPercentage / 100));
+            return discountedPrice * travelers;
+        }
         return pricePerPerson * travelers;
     };
 
@@ -200,7 +208,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                     />
                 )}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-8">
-                    <div className="container mx-auto">
+                    <div className="container mx-auto mb-12">
                         <h1 className="text-4xl font-bold text-white mb-2">{packageData.title}</h1>
                         <p className="text-xl text-white/90 mb-4">
                             {packageData.subtitle || packageData.description.substring(0, 100) + "..."}
@@ -216,8 +224,8 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                             </div>
                             <div className="flex items-center gap-2">
                                 <Star className="h-5 w-5 fill-yellow-400 text-yellow-400"/>
-                                <span>{packageData.rating || (packageData.agency?.rating)}</span>
-                                <span>({packageData.reviews?.length || (packageData.agency?.reviews || 0)} reseñas)</span>
+                                <span>{packageData.rating}</span>
+                                <span>({packageData.reviews?.length} reseñas)</span>
                             </div>
                         </div>
                     </div>
@@ -282,7 +290,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                             <p className="text-sm text-muted-foreground">Próxima Salida</p>
                                             <p className="font-medium">
                                                 {packageData.startDates && packageData.startDates.length > 0
-                                                    ? formatDate(packageData.startDates[0].date)
+                                                    ? formatDate(packageData.startDates.sort((a, b) => a.date - b.date)[0].date)
                                                     : "Consultar"}
                                             </p>
                                         </div>
@@ -438,9 +446,23 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                     <div className="space-y-6">
                         <Card className="p-6 sticky top-24">
                             <div className="flex items-baseline justify-between mb-4">
-                                <div className="text-3xl font-bold">
-                                    USD ${selectedDate.price || packageData.price}
-                                </div>
+                                {packageData.discountPercentage > 0 ? (
+                                    <div>
+                                        <div className="text-sm text-muted-foreground line-through">
+                                            USD ${selectedDate.price || packageData.price}
+                                        </div>
+                                        <div className="text-3xl font-bold flex items-center">
+                                            USD ${(selectedDate.price || packageData.price) * (1 - packageData.discountPercentage / 100)}
+                                            <span className="ml-2 bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                                                -{packageData.discountPercentage}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-3xl font-bold">
+                                        USD ${selectedDate.price || packageData.price}
+                                    </div>
+                                )}
                                 <div className="text-sm text-muted-foreground">por persona</div>
                             </div>
 
@@ -452,16 +474,19 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                         </label>
                                         <select
                                             className="w-full border rounded-md p-2"
-                                            value={selectedDate.date}
+                                            value={selectedDate._id}
                                             onChange={(e) => {
                                                 const selected = packageData.startDates.find(
-                                                    (date) => date.date === e.target.value
-                                                );
-                                                if (selected) setSelectedDate(selected);
+                                                    (date) => date._id === e.target.value
+                                                )
+
+                                                if (selected) {
+                                                    setSelectedDate(selected)
+                                                }
                                             }}
                                         >
                                             {packageData.startDates.map((date) => (
-                                                <option key={date.date} value={date.date}>
+                                                <option key={date._id} value={date._id}>
                                                     {formatDate(date.date)} - {date.availableSpots}{" "}
                                                     lugares disponibles
                                                 </option>
@@ -501,7 +526,11 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                             <div className="space-y-2 mb-6 border-t border-b py-4">
                                 <div className="flex justify-between">
                                     <span>Precio base</span>
-                                    <span>${selectedDate.price || packageData.price} USD</span>
+                                    <span>
+                                        ${packageData.discountPercentage > 0
+                                        ? ((selectedDate.price || packageData.price) * (1 - packageData.discountPercentage / 100)).toFixed(2)
+                                        : (selectedDate.price || packageData.price)} USD
+                                    </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Personas</span>
@@ -509,7 +538,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                 </div>
                                 <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
                                     <span>Total</span>
-                                    <span>${calculateTotalPrice()} USD</span>
+                                    <span>${calculateTotalPrice().toFixed(2)} USD</span>
                                 </div>
                             </div>
 
@@ -573,6 +602,11 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                                     </span>
                                                 ))}
                                             </div>
+                                            {pkg.discountPercentage > 0 && (
+                                                <div className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                                    -{pkg.discountPercentage}%
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="p-4">
                                             <div className="flex items-center justify-between mb-2">
@@ -592,9 +626,20 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                                 <span>{pkg.dates}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <p className="font-semibold text-lg">
-                                                    USD ${pkg.price.toLocaleString()}
-                                                </p>
+                                                {pkg.discountPercentage > 0 ? (
+                                                    <div>
+                                                        <p className="line-through text-sm text-muted-foreground">
+                                                            USD ${pkg.price.toLocaleString()}
+                                                        </p>
+                                                        <p className="font-semibold text-lg">
+                                                            USD ${(pkg.price * (1 - pkg.discountPercentage / 100)).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="font-semibold text-lg">
+                                                        USD ${pkg.price.toLocaleString()}
+                                                    </p>
+                                                )}
                                                 <span className="text-sm text-muted-foreground">
                                                     {pkg.difficulty}
                                                 </span>

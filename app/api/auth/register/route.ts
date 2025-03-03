@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import dbConnect from '@/lib/db';
 import Agency from '@/models/Agency';
+import {Resend} from 'resend'
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: Request) {
     try {
         await dbConnect();
@@ -84,6 +86,32 @@ export async function POST(request: Request) {
             instagram: agency.instagram,
             facebook: agency.facebook
         };
+
+        await resend.emails.send({
+            from: 'QViaje <no-reply@qviaje.com>',
+            to: email,
+            subject: 'Bienvenido a QViaje',
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #3b82f6;">¡Bienvenido a QViaje!</h2>
+              <p>Hola,</p>
+              <p>Es un placer darte la bienvenida a QViaje, donde encontrarás las mejores opciones para gestionar tu negocio de viajes.</p>
+              
+              <p>Quiero que sepas que no estás solo en este viaje. Mi nombre es <strong>Abel Penton</strong> y estaré aquí para ayudarte personalmente en lo que necesites. Puedes contactarme directamente al <strong>📞 +[598] 97222006</strong> si tienes alguna pregunta o necesitas asesoramiento.</p>
+            
+              <p>Desde ahora, tienes acceso a publicar paquetes de viaje con facilidad y seguridad, certificar tu empresa, analisis de datos y mucho mas.</p>
+              
+              <p>Si en cualquier momento necesitas ayuda, no dudes en escribirme. Estoy aquí para hacer que tu experiencia en QViaje sea excelente.</p>
+            
+              <p>¡Bienvenido nuevamente y que empiece la aventura! 🚀</p>
+            
+              <p>Saludos,<br>
+              <strong>Abel Penton</strong><br>
+              Tu asistente de viajes en QViaje</p>
+            </div>
+      `,
+        });
+
 
         return NextResponse.json(agencyResponse, { status: 201 });
     } catch (error: any) {

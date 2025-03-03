@@ -34,7 +34,7 @@ export default function Home() {
       try {
         setLoading(true);
         // Fetch the top 5 most visited packages from verified agencies
-        const response = await fetch('/api/packages?featured=true&limit=5&status=Listado');
+        const response = await fetch('/api/packages?featured=true&limit=3&status=Listado');
 
         if (!response.ok) {
           toast.error('Error al cargar paquetes destacados');
@@ -271,10 +271,10 @@ export default function Home() {
                               <div className="p-5 space-y-3">
                                 <div className="flex items-center justify-between">
                                   <h3 className="font-semibold text-lg text-gray-900">{pkg.title}</h3>
-                                  <div className="flex items-center gap-1 text-yellow-500">
+                                  {pkg.rating && <div className="flex items-center gap-1 text-yellow-500">
                                     <Star className="h-4 w-4 fill-current"/>
-                                    <span className="text-sm font-medium">{pkg.rating || "4.5"}</span>
-                                  </div>
+                                    <span className="text-sm font-medium">{pkg.rating}</span>
+                                  </div>}
                                 </div>
                                 <p className="text-gray-600 text-sm">{pkg.destination}</p>
                                 <p className="text-gray-700 text-sm">{pkg.description.substring(0, 60)}...</p>

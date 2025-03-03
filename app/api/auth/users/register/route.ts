@@ -38,6 +38,7 @@ export async function POST(request: Request) {
             photoUrl = `data:${mimeType};base64,${base64}`;
         }
 
+        console.log(password)
         const hashedPassword = await hash(password, 12);
 
         const user = await User.create({

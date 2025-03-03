@@ -79,6 +79,7 @@ async function getPackageData(id) {
       price: packageData.price,
       rating: averageRating,
       reviews: reviewCount,
+      discountPercentage: packageData.discountPercentage,
       dates: `${packageData.duration.days} días / ${packageData.duration.nights} noches`,
       minPeople: packageData.minPeople || 1,
       maxPeople: packageData.maxPeople,

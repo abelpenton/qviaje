@@ -28,10 +28,11 @@ export default function Header() {
 
   return (
       <header className="border-b">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet"/>
         <nav className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center space-x-2">
-              <Plane className="h-6 w-6 text-primary" />
+              <Plane className="h-6 w-6 text-primary"/>
               <span className="text-xl font-bold">QViaje</span>
             </Link>
 
@@ -102,7 +103,7 @@ export default function Header() {
                       onChange={(e) => setQuery(e.target.value)}
                       onKeyDown={handleKeyPress}
                   />
-                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground"/>
                 </div>
                 <Link href="/explorar" className="block py-2 text-foreground hover:text-primary">
                   Explorar

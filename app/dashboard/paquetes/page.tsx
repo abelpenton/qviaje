@@ -17,17 +17,26 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation'
 import {useSession} from 'next-auth/react'
 import toast from 'react-hot-toast'
+import useAgency from '@/hooks/useAgency'
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter()
   const {data: session} = useSession()
+  const {agency, loading: loadingAgency} = useAgency()
+  const [paidSubscription, setPaidSubscription] = useState(false);
+
+  useEffect(() => {
+    if (agency) {
+      setPaidSubscription(agency.subscriptionPlan !== 'free');
+    }
+  }, [agency])
 
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        const response = await fetch('/api/packages?agencyId=' + session.user.id); // Asegúrate de que la API esté configurada correctamente
+        const response = await fetch('/api/packages?agencyId=' + session.user.id);
         const data = await response.json();
 
         if (response.ok) {
@@ -45,8 +54,12 @@ export default function PackagesPage() {
     fetchPackages();
   }, []);
 
-  if (loading) {
-    return <p>Cargando...</p>; // Puedes agregar un spinner o algo similar
+  if (loading || loadingAgency) {
+    return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+    );
   }
 
   const handleStatusChange = async (packageId, newStatus) => {
@@ -105,13 +118,18 @@ export default function PackagesPage() {
             <p className="text-muted-foreground">Gestiona tus paquetes turísticos aquí</p>
           </div>
           <Link href="/dashboard/paquetes/nuevo">
-            <Button>
+            <Button className={`${agency.subscriptionPlan === 'free' && packages.length === 10 ? 'pointer-events-none opacity-50' : '' }`} >
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Paquete
             </Button>
           </Link>
         </div>
-
+        {
+          !paidSubscription &&
+          <div className="text-center bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
+            <span>Cuentas con la version gratuita, tendras un limite de 10 paquetes. Si deseas mas, actualiza tu plan en <a href="/dashboard/suscripcion" className="underline">Planes</a>.</span>
+          </div>
+        }
         <Card>
           <Table>
             <TableHeader>

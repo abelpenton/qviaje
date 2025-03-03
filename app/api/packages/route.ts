@@ -45,6 +45,7 @@ export async function GET(request: Request) {
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
+
     const agencyId = searchParams.get('agencyId');
     const featured = searchParams.get('featured') === 'true';
     const limit = parseInt(searchParams.get('limit') || '100');
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
     const category = searchParams.getAll('category');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
-    const status = searchParams.get('status') ? [searchParams.get('status')] : ['Creado', 'Listado', 'Archivado']; // Default to listed packages
+    const status = searchParams.get('status') ? [searchParams.get('status')] : ['Creado', 'Listado', 'Archivado'];
     const date = searchParams.get('date');
     const minDuration = searchParams.get('minDuration');
     const maxDuration = searchParams.get('maxDuration');
@@ -61,46 +62,25 @@ export async function GET(request: Request) {
     // Build the query
     let query: any = {};
 
-    // Filter by agency if specified
-    if (agencyId) {
-      query.agencyId = new ObjectId(agencyId);
-    }
-
-    // Filter by status (default to 'Listado')
+    if (agencyId) query.agencyId = new ObjectId(agencyId);
     query.status = { $in: status };
+    if (destination) query.destination = { $regex: destination, $options: 'i' };
+    if (category.length > 0) query.category = { $in: category };
 
-    // Filter by destination if specified
-    if (destination) {
-      query.destination = { $regex: destination, $options: 'i' };
-    }
-
-    // Filter by category if specified
-    if (category && category.length > 0) {
-      query.category = { $in: category };
-    }
-
-    // Filter by price range if specified
     if (minPrice || maxPrice) {
       query.price = {};
       if (minPrice) query.price.$gte = parseFloat(minPrice);
       if (maxPrice) query.price.$lte = parseFloat(maxPrice);
     }
 
-    // Filter by date if specified
-    if (date) {
-      const selectedDate = new Date(date);
-      // Find packages with start dates on or after the selected date
-      query['startDates.date'] = { $gte: selectedDate };
-    }
+    if (date) query['startDates.date'] = { $gte: new Date(date) };
 
-    // Filter by duration if specified
     if (minDuration || maxDuration) {
       query['duration.days'] = {};
       if (minDuration) query['duration.days'].$gte = parseInt(minDuration);
       if (maxDuration) query['duration.days'].$lte = parseInt(maxDuration);
     }
 
-    // Filter by travelers if specified
     if (travelers) {
       const travelersCount = parseInt(travelers);
       query.minPeople = { $lte: travelersCount };
@@ -134,67 +114,116 @@ export async function GET(request: Request) {
         query._id = { $in: topPackageIds };
 
         // Get the packages
-        const packages = await Package.find(query);
+        const packages = await Package.aggregate([
+          { $match: query },
+          {
+            $lookup: {
+              from: 'agencies',
+              localField: 'agencyId',
+              foreignField: '_id',
+              as: 'agency'
+            }
+          },
+          { $unwind: '$agency' },
+          {
+            $lookup: {
+              from: 'reviews', // Assuming reviews collection is named 'reviews'
+              localField: '_id', // Reference to the package _id
+              foreignField: 'packageId', // Foreign field that references the package
+              as: 'reviews'
+            }
+          },
+          {
+            $addFields: {
+              reviewCount: { $size: '$reviews' }, // Count the number of reviews
+              rating: {
+                $avg: '$reviews.rating' // Calculate the average rating
+              },
+              subscriptionPriority: {
+                $switch: {
+                  branches: [
+                    { case: { $eq: ['$agency.subscriptionPlan', 'premium'] }, then: 3 },
+                    { case: { $eq: ['$agency.subscriptionPlan', 'basic'] }, then: 2 },
+                    { case: { $eq: ['$agency.subscriptionPlan', 'free'] }, then: 1 }
+                  ],
+                  default: 0
+                }
+              },
+              verifiedPriority: { $cond: { if: '$agency.verified', then: 1, else: 0 } }
+            }
+          },
+          {
+            $sort: {
+              verifiedPriority: -1,
+              subscriptionPriority: -1,
+              rating: -1, // Sort by rating
+              reviewCount: -1, // Sort by review count
+              createdAt: -1
+            }
+          },
+          { $limit: limit }
+        ]);
 
-        // Get reviews for each package
-        const packagesWithReviews = await Promise.all(
-            packages.map(async (pkg) => {
-              // Get reviews count and average rating
-              const reviews = await Review.find({ packageId: pkg._id });
-              const reviewCount = reviews.length;
-              let averageRating = 0;
-
-              if (reviewCount > 0) {
-                const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-                averageRating = parseFloat((totalRating / reviewCount).toFixed(1));
-              }
-
-              return {
-                ...pkg.toObject(),
-                rating: averageRating,
-                reviews: reviewCount
-              };
-            })
-        );
-
-        // Sort packages by view count (same order as topPackageIds)
-        const sortedPackages = topPackageIds
-            .map(id => packagesWithReviews.find(pkg => pkg._id.toString() === id.toString()))
-            .filter(Boolean); // Remove any undefined values
-
-        return NextResponse.json(sortedPackages);
+        return NextResponse.json(packages);
       }
     }
 
-    // Regular query (not featured or no top packages found)
-    const packages = await Package.find(query).sort({ createdAt: -1 }).limit(limit);
+    const packages = await Package.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: 'agencies',
+          localField: 'agencyId',
+          foreignField: '_id',
+          as: 'agency'
+        }
+      },
+      { $unwind: '$agency' },
+      {
+        $lookup: {
+          from: 'reviews', // Assuming reviews collection is named 'reviews'
+          localField: '_id', // Reference to the package _id
+          foreignField: 'packageId', // Foreign field that references the package
+          as: 'reviews'
+        }
+      },
+      {
+        $addFields: {
+          reviewCount: { $size: '$reviews' }, // Count the number of reviews
+          rating: {
+            $avg: '$reviews.rating' // Calculate the average rating
+          },
+          subscriptionPriority: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$agency.subscriptionPlan', 'premium'] }, then: 3 },
+                { case: { $eq: ['$agency.subscriptionPlan', 'basic'] }, then: 2 },
+                { case: { $eq: ['$agency.subscriptionPlan', 'free'] }, then: 1 }
+              ],
+              default: 0
+            }
+          },
+          verifiedPriority: { $cond: { if: '$agency.verified', then: 1, else: 0 } }
+        }
+      },
+      {
+        $sort: {
+          verifiedPriority: -1,
+          subscriptionPriority: -1,
+          rating: -1, // Sort by rating
+          reviewCount: -1, // Sort by review count
+          createdAt: -1
+        }
+      },
+      { $limit: limit }
+    ]);
 
-    // Get reviews for each package
-    const packagesWithReviews = await Promise.all(
-        packages.map(async (pkg) => {
-          // Get reviews count and average rating
-          const reviews = await Review.find({ packageId: pkg._id });
-          const reviewCount = reviews.length;
-          let averageRating = 0;
 
-          if (reviewCount > 0) {
-            const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-            averageRating = parseFloat((totalRating / reviewCount).toFixed(1));
-          }
-
-          return {
-            ...pkg.toObject(),
-            rating: averageRating,
-            reviews: reviewCount
-          };
-        })
-    );
-
-    return NextResponse.json(packagesWithReviews);
+    return NextResponse.json(packages);
   } catch (error) {
-    console.error('Error al obtener los paquetes:', error);
+    console.error('Error fetching packages:', error);
     return NextResponse.json(
-        { error: 'Error al obtener los paquetes' },
+        { error: 'Error fetching packages' },
         { status: 500 }
     );
   }
@@ -259,19 +288,37 @@ export async function POST(request: Request) {
       }
     }
 
+    // Procesar la duración
+    let duration = { days: 1, nights: 0 };
+    const durationStr = formData.get('duration');
+    if (durationStr) {
+      try {
+        duration = JSON.parse(durationStr);
+      } catch (e) {
+        // Si no es un JSON, intentar parsear el formato "X días / Y noches"
+        const durationMatch = durationStr.toString().match(/(\d+) días \/ (\d+) noches/);
+        if (durationMatch) {
+          duration = {
+            days: parseInt(durationMatch[1]),
+            nights: parseInt(durationMatch[2])
+          };
+        } else {
+          console.error('Error al parsear la duración:', e);
+        }
+      }
+    }
+
     // Store the package in MongoDB with Cloudinary URLs
     const packageData = {
       title: formData.get('title'),
       description: formData.get('description'),
       destination: formData.get('destination'),
       price: parseFloat(formData.get('price')),
+      discountPercentage: parseFloat(formData.get('discountPercentage') || '0'),
       agencyId: session.user.id,
       minPeople: parseInt(formData.get('minPeople') || '1'),
       maxPeople: parseInt(formData.get('maxPeople')),
-      duration: {
-        days: parseInt(formData.get('duration').split(' ')[0]),
-        nights: parseInt(formData.get('duration').split(' / ')[1].split(' ')[0]),
-      },
+      duration: duration,
       included: formData.get('included').split('\n').map((item) => item.trim()).filter(item => item),
       notIncluded: formData.get('notIncluded').split('\n').map((item) => item.trim()).filter(item => item),
       images: uploadedImages,

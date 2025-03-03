@@ -117,7 +117,7 @@ export default function MisPaquetesPage() {
                                                     <h3 className="font-semibold text-lg">{pkg.title}</h3>
                                                     <div className="flex items-center gap-1">
                                                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>
-                                                        <span>{pkg.rating || 4.5}</span>
+                                                        <span>{pkg.rating}</span>
                                                     </div>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground mb-2">{pkg.description.substring(0, 60)}...</p>
