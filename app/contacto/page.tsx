@@ -44,18 +44,17 @@ export default function ContactoPage() {
         try {
             setIsSubmitting(true);
 
-            // Simulación de envío de formulario
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const response = await fetch('/api/support', {
+                method: 'POST',
+                body: JSON.stringify(values),
+            });
 
-            console.log('Formulario enviado:', values);
+            if (response.ok) {
+                toast.success('Mensaje enviado correctamente. Nos pondremos en contacto contigo pronto.');
+            }
 
-            // Mostrar mensaje de éxito
-            toast.success('Mensaje enviado correctamente. Nos pondremos en contacto contigo pronto.');
-
-            // Resetear formulario
             form.reset();
         } catch (error) {
-            console.error('Error al enviar el formulario:', error);
             toast.error('Error al enviar el mensaje. Por favor intenta nuevamente.');
         } finally {
             setIsSubmitting(false);
@@ -81,7 +80,6 @@ export default function ContactoPage() {
                                     <Mail className="h-6 w-6 text-primary mt-1" />
                                     <div>
                                         <h3 className="font-medium mb-1">Email</h3>
-                                        <p className="text-muted-foreground">info@qviaje.com</p>
                                         <p className="text-muted-foreground">soporte@qviaje.com</p>
                                     </div>
                                 </div>
@@ -94,8 +92,7 @@ export default function ContactoPage() {
                                     <Phone className="h-6 w-6 text-primary mt-1" />
                                     <div>
                                         <h3 className="font-medium mb-1">Teléfono</h3>
-                                        <p className="text-muted-foreground">+1 (555) 123-4567</p>
-                                        <p className="text-muted-foreground">Lun - Vie: 9:00 - 18:00</p>
+                                        <p className="text-muted-foreground">+598 (097) 222 006</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -108,10 +105,7 @@ export default function ContactoPage() {
                                     <div>
                                         <h3 className="font-medium mb-1">Ubicación</h3>
                                         <p className="text-muted-foreground">
-                                            Av. Tecnológico 123, Col. Centro
-                                        </p>
-                                        <p className="text-muted-foreground">
-                                            Ciudad de México, México
+                                            Uruguay, Montevideo
                                         </p>
                                     </div>
                                 </div>

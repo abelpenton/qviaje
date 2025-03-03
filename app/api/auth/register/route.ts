@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         };
 
         await resend.emails.send({
-            from: 'QViaje <no-reply@qviaje.com>',
+            from: 'QViaje <soporte@qviaje.com>',
             to: email,
             subject: 'Bienvenido a QViaje',
             html: `
