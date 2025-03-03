@@ -319,6 +319,11 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                                             Verificado
                                                         </span>
                                                     )}
+                                                    {!packageData.agency.verified && (
+                                                        <span className="bg-gray-100 text-gray-800 text-xs px-2.5 py-0.5 rounded-full">
+                                                            No Verificado
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>

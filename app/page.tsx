@@ -10,9 +10,7 @@ import {Search, MapPin, Calendar as CalendarIcon, Users, Heart, Star, ArrowRight
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade } from "swiper/modules";
-import { format } from "date-fns";
+import {format} from 'date-fns'
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import "swiper/css";
@@ -53,6 +51,19 @@ export default function Home() {
 
     fetchFeaturedPackages();
   }, []);
+
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return "Fecha no disponible";
+    }
+  };
 
   const handleSearch = () => {
     // Build query parameters for the search
@@ -277,10 +288,12 @@ export default function Home() {
                                   </div>}
                                 </div>
                                 <p className="text-gray-600 text-sm">{pkg.destination}</p>
-                                <p className="text-gray-700 text-sm">{pkg.description.substring(0, 60)}...</p>
                                 <p className="text-sm text-gray-500">
                                   {pkg.duration.days} días / {pkg.duration.nights} noches
                                 </p>
+                                {pkg.startDates.length > 0 && <p className="text-sm text-gray-500">
+                                  Proxima salida {formatDate(pkg.startDates.sort((a, b) => a.date - b.date)[0].date)}
+                                </p>}
                                 <p className="text-primary font-semibold text-lg">
                                   USD ${pkg.price.toLocaleString()}
                                 </p>

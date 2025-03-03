@@ -57,10 +57,15 @@ export async function GET(request: Request) {
 
         // Filter by date if specified
         if (date) {
-            const selectedDate = new Date(date);
-            query['startDates.date'] = { $gte: selectedDate };
-        }
+            const startDate = new Date(date);
+            const firstDayOfMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+            const firstDayOfNextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
+            query['startDates.date'] = {
+                $gte: firstDayOfMonth,
+                $lt: firstDayOfNextMonth
+            };
+        }
         // Filter by duration if specified
         if (minDuration || maxDuration) {
             query['duration.days'] = {};

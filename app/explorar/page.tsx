@@ -45,6 +45,19 @@ export default function ExplorePage() {
   const [activeFilters, setActiveFilters] = useState([]);
   const [agencyId, setAgencyId] = useState(searchParams.get('agencyId') || '');
 
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return "Fecha no disponible";
+    }
+  };
+
   const categories = [
     'Playa', 'Montaña', 'Ciudad', 'Aventura', 'Relax',
     'Cultural', 'Familiar', 'Romántico', 'Lujo', 'Económico'
@@ -711,7 +724,13 @@ export default function ExplorePage() {
                                         <span>{pkg.rating}</span>
                                       </div>
                                     </div>}
-                                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{pkg.description.substring(0, 60)}...</p>
+                                    {
+                                      !pkg.rating &&
+                                      <h3 className="font-semibold text-lg line-clamp-1">{pkg.title}</h3>
+                                    }
+                                    {pkg.startDates.length > 0 && <p className="text-sm text-gray-500 mt-1 mb-1">
+                                      Proxima salida {formatDate(pkg.startDates.sort((a, b) => a.date - b.date)[0].date)}
+                                    </p>}
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                                       <MapPin className="h-4 w-4"/>
                                       <span className="line-clamp-1">{pkg.destination}</span>

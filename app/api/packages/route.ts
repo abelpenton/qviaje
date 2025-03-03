@@ -73,7 +73,16 @@ export async function GET(request: Request) {
       if (maxPrice) query.price.$lte = parseFloat(maxPrice);
     }
 
-    if (date) query['startDates.date'] = { $gte: new Date(date) };
+    if (date) {
+      const startDate = new Date(date);
+      const firstDayOfMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const firstDayOfNextMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+
+      query['startDates.date'] = {
+        $gte: firstDayOfMonth,
+        $lt: firstDayOfNextMonth
+      };
+    }
 
     if (minDuration || maxDuration) {
       query['duration.days'] = {};
