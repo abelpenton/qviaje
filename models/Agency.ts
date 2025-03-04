@@ -71,7 +71,7 @@ const AgencySchema = new mongoose.Schema({
   subscriptionPlan: {
     type: String,
     enum: ['free', 'basic', 'premium'],
-    default: 'free'
+    default: 'premium'
   },
   createdAt: {
     type: Date,

@@ -158,7 +158,7 @@ export default function PreguntasFrecuentesPage() {
             questions: [
                 {
                     question: "¿Qué estadísticas puedo ver sobre mis paquetes?",
-                    answer: "En el panel de control, encontrarás una sección de 'Estadísticas' donde puedes ver: número de vistas de tus paquetes, consultas recibidas, tasa de conversión (consultas/vistas), paquetes más populares, y tendencias a lo largo del tiempo. Puedes filtrar estas estadísticas por período (semana o mes)."
+                    answer: "En el panel de control, encontrarás una sección de 'Dashboard' donde puedes ver: número de vistas de tus paquetes, consultas recibidas, tasa de conversión (consultas/vistas), paquetes más populares, y tendencias a lo largo del tiempo. Puedes filtrar estas estadísticas por período (semana o mes)."
                 },
                 {
                     question: "¿Cómo sé si un viajero está interesado en mi paquete?",
@@ -221,7 +221,7 @@ export default function PreguntasFrecuentesPage() {
                 },
                 {
                     question: "¿En qué países opera QViaje?",
-                    answer: "QViaje está diseñado para operar en toda Latinoamérica. Actualmente, nos enfocamos principalmente en destinos y agencias de México, Colombia, Perú, Argentina, Chile y Brasil, pero las agencias de cualquier país de la región pueden registrarse y ofrecer sus servicios."
+                    answer: "QViaje está diseñado para operar en toda Latinoamérica. Actualmente, nos enfocamos principalmente en destinos y agencias de Uruguay, Argentina, Chile y Brasil, pero las agencias de cualquier país de la región pueden registrarse y ofrecer sus servicios."
                 }
             ]
         },
@@ -230,7 +230,7 @@ export default function PreguntasFrecuentesPage() {
             questions: [
                 {
                     question: "¿Cómo puedo contactar al soporte de QViaje?",
-                    answer: "Puedes contactar a nuestro equipo de soporte a través del correo electrónico support@qviaje.com. Intentamos responder a todas las consultas en un plazo de 24-48 horas hábiles."
+                    answer: "Puedes contactar a nuestro equipo de soporte a través del correo electrónico soporte@qviaje.com. Intentamos responder a todas las consultas en un plazo de 24-48 horas hábiles."
                 },
                 {
                     question: "¿Tienen un número de teléfono para contacto?",
@@ -255,7 +255,7 @@ export default function PreguntasFrecuentesPage() {
                 },
                 {
                     question: "¿Cómo puedo reportar un problema de seguridad?",
-                    answer: "Si detectas algún problema de seguridad o tienes preocupaciones sobre la privacidad de tus datos, por favor contáctanos inmediatamente a security@qviaje.com. Investigaremos y abordaremos el problema lo antes posible."
+                    answer: "Si detectas algún problema de seguridad o tienes preocupaciones sobre la privacidad de tus datos, por favor contáctanos inmediatamente a soporte@qviaje.com. Investigaremos y abordaremos el problema lo antes posible."
                 }
             ]
         }

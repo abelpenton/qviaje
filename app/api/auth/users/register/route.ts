@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
+import Agency from '@/models/Agency'
 
 export async function POST(request: Request) {
     try {
@@ -26,6 +27,14 @@ export async function POST(request: Request) {
         if (existingUser) {
             return NextResponse.json(
                 { error: 'Ya existe un usuario con este email' },
+                { status: 400 }
+            );
+        }
+
+        const existingAgency = await Agency.findOne({ email });
+        if (existingAgency) {
+            return NextResponse.json(
+                { error: 'Ya existe una agencia con este email' },
                 { status: 400 }
             );
         }

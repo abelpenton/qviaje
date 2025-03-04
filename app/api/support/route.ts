@@ -7,19 +7,18 @@ export async function POST(request: Request) {
         const {name, email, subject, message} = await request.json();
 
         const response = await resend.emails.send({
-            from: email,
-            to: 'soporte@qviaje.com',
-            subject: subject,
+            from: 'QViaje <no-reply@qviaje.com>',
+            to: "2235penton@gmail.com",
+            subject: 'Mensaje de Soporte',
             html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <p>Hola mi nombre es ${name},</p>
-              <p>${message}</p>
-                            
+              <p>Nombre ${name},</p>
+              <p>Email ${email},</p>
+              <p>Asunto ${subject},</p>
+              <p>Mensaje ${message}</p>                            
             </div>
       `,
         });
-
-        console.log(response)
 
         return NextResponse.json({ status: 201 });
     }

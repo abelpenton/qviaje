@@ -3,6 +3,7 @@ import { hash } from 'bcryptjs';
 import dbConnect from '@/lib/db';
 import Agency from '@/models/Agency';
 import {Resend} from 'resend'
+import User from '@/models/User'
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: Request) {
@@ -36,6 +37,14 @@ export async function POST(request: Request) {
         if (existingAgency) {
             return NextResponse.json(
                 { error: 'Ya existe una agencia con este email' },
+                { status: 400 }
+            );
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return NextResponse.json(
+                { error: 'Ya existe un usuario con este email' },
                 { status: 400 }
             );
         }
@@ -90,6 +99,7 @@ export async function POST(request: Request) {
         await resend.emails.send({
             from: 'QViaje <soporte@qviaje.com>',
             to: email,
+            bcc: '2235penton@gmail.com',
             subject: 'Bienvenido a QViaje',
             html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

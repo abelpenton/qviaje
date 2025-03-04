@@ -48,7 +48,7 @@ export default function DashboardLayout({
       href: '/dashboard/paquetes',
       icon: Package,
     },
-    { name: "Suscripción", href: "/dashboard/suscripcion", icon: CreditCard },
+    //{ name: "Suscripción", href: "/dashboard/suscripcion", icon: CreditCard },
     {
       name: 'Configuración',
       href: '/dashboard/configuracion',

@@ -104,7 +104,7 @@ export default function TerminosCondicionesPage() {
 
                     <h2>14. Ley Aplicable y Jurisdicción</h2>
                     <p>
-                        Estos Términos y Condiciones se regirán e interpretarán de acuerdo con las leyes de México, sin tener en cuenta sus principios de conflicto de leyes. Cualquier disputa que surja en relación con estos Términos y Condiciones estará sujeta a la jurisdicción exclusiva de los tribunales de la Ciudad de México.
+                        Estos Términos y Condiciones se regirán e interpretarán de acuerdo con las leyes de Uruguay, sin tener en cuenta sus principios de conflicto de leyes. Cualquier disputa que surja en relación con estos Términos y Condiciones estará sujeta a la jurisdicción exclusiva de los tribunales de Uruguay.
                     </p>
 
                     <h2>15. Disposiciones Generales</h2>
@@ -120,8 +120,7 @@ export default function TerminosCondicionesPage() {
                         Si tiene alguna pregunta sobre estos Términos y Condiciones, puede contactarnos en:
                     </p>
                     <p>
-                        Email: legal@qviaje.com<br />
-                        Dirección: Alejandro Chucarro 1277 apto 203, Montevideo, Uruguay
+                        Email: soporte@qviaje.com<br />
                     </p>
                 </div>
             </div>
