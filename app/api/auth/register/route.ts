@@ -107,7 +107,7 @@ export async function POST(request: Request) {
               <p>Hola,</p>
               <p>Es un placer darte la bienvenida a QViaje, donde encontrarás las mejores opciones para gestionar tu negocio de viajes.</p>
               
-              <p>Quiero que sepas que no estás solo en este viaje. Mi nombre es <strong>Abel Penton</strong> y estaré aquí para ayudarte personalmente en lo que necesites. Puedes contactarme directamente al <strong>📞 +[598] 97222006</strong> si tienes alguna pregunta o necesitas asesoramiento.</p>
+              <p>Quiero que sepas que no estás solo en este viaje. Mi nombre es <strong>Abel Penton</strong> y estaré aquí para ayudarte personalmente en lo que necesites.</p>
             
               <p>Desde ahora, tienes acceso a publicar paquetes de viaje con facilidad y seguridad, certificar tu empresa, analisis de datos y mucho mas.</p>
               
