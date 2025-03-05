@@ -225,7 +225,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                             <div className="flex items-center gap-2">
                                 <Star className="h-5 w-5 fill-yellow-400 text-yellow-400"/>
                                 <span>{packageData.rating}</span>
-                                <span>({packageData.reviews?.length} reseñas)</span>
+                                <span>({packageData.reviews || "0"} reseñas)</span>
                             </div>
                         </div>
                     </div>
@@ -328,7 +328,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400"/>
                                                     <span>{packageData.agency.rating}</span>
-                                                    <span>({packageData.agency.reviews} reseñas)</span>
+                                                    <span>({packageData.agency.reviews || "0"} reseñas)</span>
                                                 </div>
                                             </div>
                                         </div>
