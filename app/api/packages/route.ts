@@ -102,12 +102,15 @@ export async function GET(request: Request) {
       const verifiedAgencies = await Agency.find({ verified: true }).select('_id');
       const verifiedAgencyIds = verifiedAgencies.map(agency => agency._id);
 
+      const listedPackages = await Package.find({status: "Listado"}).select("_id")
+      const listedPackagesIds = listedPackages.map(p => p._id)
+
       // Only include packages from verified agencies
       query.agencyId = { $in: verifiedAgencyIds };
 
       // Get package view statistics
       const packageStats = await Statistic.aggregate([
-        { $match: { type: 'view', agencyId: { $in: verifiedAgencyIds } } },
+        { $match: { type: 'view', agencyId: { $in: verifiedAgencyIds }, packageId: {$in: listedPackagesIds} } },
         { $group: { _id: '$packageId', views: { $sum: 1 } } },
         { $sort: { views: -1 } },
         { $limit: limit }

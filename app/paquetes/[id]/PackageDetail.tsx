@@ -560,17 +560,7 @@ export default function PackageDetail({ packageData, similarPackages = [] }) {
                                     Descargar Itinerario
                                 </Button>
                             </div>
-
-                            <div className="mt-6 pt-6 border-t text-sm text-muted-foreground">
-                                <p className="flex items-center gap-2 mb-2">
-                                    <Calendar className="h-4 w-4"/>
-                                    Reserva flexible - Cancela hasta 30 días antes
-                                </p>
-                                <p className="flex items-center gap-2">
-                                    <Users className="h-4 w-4"/>
-                                    Grupo pequeño - Máximo {packageData.maxPeople} personas
-                                </p>
-                            </div>
+                            
                         </Card>
                     </div>
                 </div>

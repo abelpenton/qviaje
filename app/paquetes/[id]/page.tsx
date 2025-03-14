@@ -129,6 +129,7 @@ async function getSimilarPackages(packageData, limit = 3) {
 
     // Buscar por destino similar o categorías similares
     const query = {
+      status: 'Listado',
       _id: { $ne: packageData.id }, // Excluir el paquete actual
       $or: [
         { destination: { $regex: packageData.location, $options: 'i' } },
